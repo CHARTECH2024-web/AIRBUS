@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CHARLES - Messagerie</title>
-    <!-- Firebase SDK -->
+    <title>CHARLES </title>
+    <!-- Firebase SDK (compat) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -103,6 +103,7 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            position: relative;
         }
 
         /* Écran de connexion */
@@ -231,12 +232,41 @@
             width: 300px;
             border-right: 1px solid var(--border);
             overflow-y: auto;
+            display: flex;
+            flex-direction: column;
         }
 
         .list-header {
             padding: 15px;
             font-weight: bold;
             border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .add-btn {
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .add-btn:hover {
+            background: var(--accent);
+            color: var(--bg-primary);
+        }
+
+        #conversations-container {
+            flex: 1;
+            overflow-y: auto;
         }
 
         .conversation-item {
@@ -379,7 +409,79 @@
             box-shadow: var(--accent-glow);
         }
 
-        /* Bip sonore (caché) */
+        /* Modals */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal.hidden {
+            display: none;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            border: 1px solid var(--border);
+        }
+
+        .modal-content h3 {
+            margin-bottom: 15px;
+            color: var(--accent);
+        }
+
+        .modal-content input, .modal-content textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            border-radius: 5px;
+        }
+
+        .modal-content textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .modal-actions button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .modal-actions .cancel {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+        }
+
+        .modal-actions .confirm {
+            background: var(--accent);
+            color: var(--bg-primary);
+        }
+
+        /* Bip sonore */
         #beep {
             display: none;
         }
@@ -426,7 +528,10 @@
             <div class="content">
                 <!-- Liste des conversations (pour privé et groupe) -->
                 <div id="conversation-list" class="conversation-list">
-                    <div class="list-header" id="list-header">Conversations</div>
+                    <div class="list-header">
+                        <span id="list-header">Conversations</span>
+                        <button id="add-conversation-btn" class="add-btn">+</button>
+                    </div>
                     <div id="conversations-container"></div>
                 </div>
 
@@ -464,6 +569,30 @@
                     <div class="settings-title">Soutenir</div>
                     <p>Orange Money : 0892959679</p>
                     <a href="#" class="support-btn" id="copy-support">Copier le numéro</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modals pour création de conversation -->
+        <div id="new-private-modal" class="modal hidden">
+            <div class="modal-content">
+                <h3 id="modal-private-title">Nouvelle conversation privée</h3>
+                <input type="text" id="private-contact" placeholder="Email ou téléphone du destinataire">
+                <div class="modal-actions">
+                    <button class="cancel" id="cancel-private">Annuler</button>
+                    <button class="confirm" id="create-private">Créer</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="new-group-modal" class="modal hidden">
+            <div class="modal-content">
+                <h3 id="modal-group-title">Nouveau groupe</h3>
+                <input type="text" id="group-name" placeholder="Nom du groupe">
+                <textarea id="group-members" placeholder="Emails ou téléphones des participants (séparés par des virgules)"></textarea>
+                <div class="modal-actions">
+                    <button class="cancel" id="cancel-group">Annuler</button>
+                    <button class="confirm" id="create-group">Créer</button>
                 </div>
             </div>
         </div>
@@ -516,11 +645,22 @@
         const themeBtns = document.querySelectorAll('.theme-btn');
         const languageSelect = document.getElementById('language-select');
         const copySupportBtn = document.getElementById('copy-support');
+        const addConversationBtn = document.getElementById('add-conversation-btn');
+        const newPrivateModal = document.getElementById('new-private-modal');
+        const newGroupModal = document.getElementById('new-group-modal');
+        const cancelPrivate = document.getElementById('cancel-private');
+        const createPrivate = document.getElementById('create-private');
+        const cancelGroup = document.getElementById('cancel-group');
+        const createGroup = document.getElementById('create-group');
+        const privateContact = document.getElementById('private-contact');
+        const groupName = document.getElementById('group-name');
+        const groupMembers = document.getElementById('group-members');
 
         // Variables globales
         let currentUser = null;
         let currentTab = 'private'; // private, group, ai
         let currentConversationId = null;
+        let currentConversationType = null;
         let unsubscribeMessages = null;
         let conversationsListener = null;
         let recaptchaVerifier = null;
@@ -541,7 +681,17 @@
                 support: 'Soutenir',
                 copy: 'Copier le numéro',
                 theme: 'Thème',
-                language: 'Langue'
+                language: 'Langue',
+                newPrivate: 'Nouvelle conversation privée',
+                newGroup: 'Nouveau groupe',
+                contactPlaceholder: 'Email ou téléphone du destinataire',
+                groupNamePlaceholder: 'Nom du groupe',
+                groupMembersPlaceholder: 'Emails ou téléphones des participants (séparés par des virgules)',
+                cancel: 'Annuler',
+                create: 'Créer',
+                userNotFound: 'Utilisateur non trouvé',
+                groupCreated: 'Groupe créé',
+                conversationCreated: 'Conversation créée'
             },
             en: {
                 conversations: 'Conversations',
@@ -555,7 +705,17 @@
                 support: 'Support',
                 copy: 'Copy number',
                 theme: 'Theme',
-                language: 'Language'
+                language: 'Language',
+                newPrivate: 'New private conversation',
+                newGroup: 'New group',
+                contactPlaceholder: 'Recipient email or phone',
+                groupNamePlaceholder: 'Group name',
+                groupMembersPlaceholder: 'Participants emails or phones (comma separated)',
+                cancel: 'Cancel',
+                create: 'Create',
+                userNotFound: 'User not found',
+                groupCreated: 'Group created',
+                conversationCreated: 'Conversation created'
             }
         };
         let currentLang = 'fr';
@@ -566,8 +726,15 @@
             document.getElementById('list-header').innerText = translations[lang].conversations;
             chatHeader.innerText = translations[lang].selectChat;
             messageText.placeholder = translations[lang].messagePlaceholder;
-            // Mettre à jour les onglets si besoin (les textes sont déjà dans les data-tab, mais on peut les changer)
-            // Pour simplifier, on laisse les icônes.
+            document.getElementById('modal-private-title').innerText = translations[lang].newPrivate;
+            document.getElementById('modal-group-title').innerText = translations[lang].newGroup;
+            privateContact.placeholder = translations[lang].contactPlaceholder;
+            groupName.placeholder = translations[lang].groupNamePlaceholder;
+            groupMembers.placeholder = translations[lang].groupMembersPlaceholder;
+            cancelPrivate.innerText = translations[lang].cancel;
+            createPrivate.innerText = translations[lang].create;
+            cancelGroup.innerText = translations[lang].cancel;
+            createGroup.innerText = translations[lang].create;
         }
 
         // Fonction pour jouer un bip
@@ -597,7 +764,7 @@
         copySupportBtn.addEventListener('click', (e) => {
             e.preventDefault();
             navigator.clipboard.writeText('0892959679').then(() => {
-                alert('Numéro copié !');
+                alert(translations[currentLang].copy + ' !');
             });
         });
 
@@ -690,7 +857,7 @@
                     });
                 }
 
-                // Charger les conversations privées et groupes
+                // Charger les conversations privées
                 loadConversations('private');
             } else {
                 currentUser = null;
@@ -715,20 +882,142 @@
                     settingsScreen.style.display = 'block';
                     document.querySelector('.chat-area').style.display = 'none';
                 } else {
-                    conversationListDiv.style.display = 'block';
+                    conversationListDiv.style.display = 'flex';
                     settingsScreen.style.display = 'none';
                     document.querySelector('.chat-area').style.display = 'flex';
                     if (tabName === 'ai') {
                         // Pour l'IA, on cache la liste des conversations et on affiche directement le chat avec l'IA
                         conversationListDiv.style.display = 'none';
-                        // Créer ou récupérer la conversation IA pour cet utilisateur
                         startAIChat();
                     } else {
-                        conversationListDiv.style.display = 'block';
+                        conversationListDiv.style.display = 'flex';
                         loadConversations(tabName);
                     }
                 }
             });
+        });
+
+        // Bouton + pour ajouter une conversation
+        addConversationBtn.addEventListener('click', () => {
+            if (currentTab === 'private') {
+                newPrivateModal.classList.remove('hidden');
+            } else if (currentTab === 'group') {
+                newGroupModal.classList.remove('hidden');
+            }
+        });
+
+        // Annuler modal privé
+        cancelPrivate.addEventListener('click', () => {
+            newPrivateModal.classList.add('hidden');
+            privateContact.value = '';
+        });
+
+        // Créer conversation privée
+        createPrivate.addEventListener('click', async () => {
+            const contact = privateContact.value.trim();
+            if (!contact) return;
+
+            // Chercher l'utilisateur par email ou téléphone
+            let userQuery;
+            if (contact.includes('@')) {
+                userQuery = db.collection('users').where('email', '==', contact);
+            } else {
+                userQuery = db.collection('users').where('phoneNumber', '==', contact);
+            }
+
+            const snapshot = await userQuery.get();
+            if (snapshot.empty) {
+                alert(translations[currentLang].userNotFound);
+                return;
+            }
+
+            const otherUserId = snapshot.docs[0].id;
+            if (otherUserId === currentUser.uid) {
+                alert("Vous ne pouvez pas discuter avec vous-même");
+                return;
+            }
+
+            // Vérifier si une conversation existe déjà entre les deux
+            const existingConv = await db.collection('privateConversations')
+                .where('participants', 'array-contains', currentUser.uid)
+                .get();
+
+            let conversationId = null;
+            existingConv.forEach(doc => {
+                const data = doc.data();
+                if (data.participants.includes(otherUserId) && data.participants.length === 2) {
+                    conversationId = doc.id;
+                }
+            });
+
+            if (!conversationId) {
+                // Créer une nouvelle conversation
+                const newConv = await db.collection('privateConversations').add({
+                    participants: [currentUser.uid, otherUserId],
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                conversationId = newConv.id;
+            }
+
+            // Fermer le modal
+            newPrivateModal.classList.add('hidden');
+            privateContact.value = '';
+
+            // Sélectionner cette conversation
+            const otherUserDoc = await db.collection('users').doc(otherUserId).get();
+            const displayName = otherUserDoc.data().displayName || contact;
+            selectConversation(conversationId, 'private', displayName);
+        });
+
+        // Annuler modal groupe
+        cancelGroup.addEventListener('click', () => {
+            newGroupModal.classList.add('hidden');
+            groupName.value = '';
+            groupMembers.value = '';
+        });
+
+        // Créer groupe
+        createGroup.addEventListener('click', async () => {
+            const name = groupName.value.trim();
+            const membersInput = groupMembers.value.trim();
+            if (!name || !membersInput) return;
+
+            const contacts = membersInput.split(',').map(s => s.trim()).filter(s => s);
+            const participantIds = [];
+
+            for (let contact of contacts) {
+                let userQuery;
+                if (contact.includes('@')) {
+                    userQuery = db.collection('users').where('email', '==', contact);
+                } else {
+                    userQuery = db.collection('users').where('phoneNumber', '==', contact);
+                }
+                const snapshot = await userQuery.get();
+                if (snapshot.empty) {
+                    alert(`Utilisateur ${contact} non trouvé`);
+                    return;
+                }
+                participantIds.push(snapshot.docs[0].id);
+            }
+
+            // Ajouter l'utilisateur courant s'il n'est pas déjà dans la liste
+            if (!participantIds.includes(currentUser.uid)) {
+                participantIds.push(currentUser.uid);
+            }
+
+            // Créer le groupe
+            const groupRef = await db.collection('groups').add({
+                name: name,
+                participants: participantIds,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            newGroupModal.classList.add('hidden');
+            groupName.value = '';
+            groupMembers.value = '';
+
+            // Sélectionner le groupe
+            selectConversation(groupRef.id, 'group', name);
         });
 
         // Charger les conversations (privées ou groupes)
@@ -738,7 +1027,6 @@
             container.innerHTML = '';
 
             if (type === 'private') {
-                // Conversations privées : on cherche les conversations où l'utilisateur est participant
                 conversationsListener = db.collection('privateConversations')
                     .where('participants', 'array-contains', currentUser.uid)
                     .onSnapshot(snapshot => {
@@ -746,13 +1034,14 @@
                         snapshot.forEach(doc => {
                             const data = doc.data();
                             const otherParticipant = data.participants.find(p => p !== currentUser.uid);
+                            if (!otherParticipant) return;
                             // Récupérer le nom de l'autre utilisateur
                             db.collection('users').doc(otherParticipant).get().then(userDoc => {
                                 if (userDoc.exists) {
                                     const displayName = userDoc.data().displayName || otherParticipant;
                                     const item = document.createElement('div');
                                     item.className = 'conversation-item';
-                                    if (doc.id === currentConversationId) item.classList.add('selected');
+                                    if (doc.id === currentConversationId && currentConversationType === 'private') item.classList.add('selected');
                                     item.textContent = displayName;
                                     item.dataset.id = doc.id;
                                     item.dataset.type = 'private';
@@ -761,9 +1050,9 @@
                                 }
                             });
                         });
-                        // Si aucune conversation, afficher un message pour en créer une
+                        // Si aucune conversation, afficher un message
                         if (snapshot.empty) {
-                            container.innerHTML = '<div class="conversation-item">Aucune conversation. Cliquez sur "Nouvelle" (à implémenter)</div>';
+                            container.innerHTML = '<div class="conversation-item">Aucune conversation. Cliquez sur + pour en créer une.</div>';
                         }
                     });
             } else if (type === 'group') {
@@ -775,13 +1064,16 @@
                             const data = doc.data();
                             const item = document.createElement('div');
                             item.className = 'conversation-item';
-                            if (doc.id === currentConversationId) item.classList.add('selected');
+                            if (doc.id === currentConversationId && currentConversationType === 'group') item.classList.add('selected');
                             item.textContent = data.name || 'Groupe sans nom';
                             item.dataset.id = doc.id;
                             item.dataset.type = 'group';
                             item.addEventListener('click', () => selectConversation(doc.id, 'group', data.name));
                             container.appendChild(item);
                         });
+                        if (snapshot.empty) {
+                            container.innerHTML = '<div class="conversation-item">Aucun groupe. Cliquez sur + pour en créer un.</div>';
+                        }
                     });
             }
         }
@@ -790,21 +1082,24 @@
         function selectConversation(conversationId, type, title) {
             if (unsubscribeMessages) unsubscribeMessages();
             currentConversationId = conversationId;
+            currentConversationType = type;
             chatHeader.innerText = title;
             messageInputArea.style.display = 'flex';
 
             // Mettre à jour la classe selected dans la liste
             document.querySelectorAll('.conversation-item').forEach(item => {
                 item.classList.remove('selected');
-                if (item.dataset.id === conversationId) item.classList.add('selected');
+                if (item.dataset.id === conversationId && item.dataset.type === type) item.classList.add('selected');
             });
 
             // Écouter les messages
             let messagesRef;
             if (type === 'private') {
                 messagesRef = db.collection('privateConversations').doc(conversationId).collection('messages').orderBy('timestamp');
-            } else {
+            } else if (type === 'group') {
                 messagesRef = db.collection('groups').doc(conversationId).collection('messages').orderBy('timestamp');
+            } else {
+                return; // ne devrait pas arriver
             }
 
             unsubscribeMessages = messagesRef.onSnapshot(snapshot => {
@@ -813,10 +1108,15 @@
                     const msg = doc.data();
                     const messageDiv = document.createElement('div');
                     messageDiv.className = `message ${msg.senderId === currentUser.uid ? 'user' : 'other'}`;
-                    messageDiv.textContent = msg.text;
+                    // Pour les groupes, on peut ajouter le nom de l'expéditeur
+                    let text = msg.text;
+                    if (type === 'group' && msg.senderId !== currentUser.uid) {
+                        // Récupérer le nom de l'expéditeur (on pourrait le faire en async, mais simplifions)
+                        // Pour l'instant, on affiche juste le message
+                    }
+                    messageDiv.textContent = text;
                     messagesContainer.appendChild(messageDiv);
                 });
-                // Défiler vers le bas
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
                 // Jouer un bip si le message n'est pas de l'utilisateur actuel
                 snapshot.docChanges().forEach(change => {
@@ -840,7 +1140,7 @@
                 };
                 if (type === 'private') {
                     db.collection('privateConversations').doc(conversationId).collection('messages').add(message);
-                } else {
+                } else if (type === 'group') {
                     db.collection('groups').doc(conversationId).collection('messages').add(message);
                 }
                 messageText.value = '';
@@ -853,7 +1153,6 @@
             messageInputArea.style.display = 'flex';
             if (unsubscribeMessages) unsubscribeMessages();
 
-            // Collection spécifique pour l'IA : on utilise un doc par utilisateur
             const aiChatRef = db.collection('aiChats').doc(currentUser.uid).collection('messages').orderBy('timestamp');
             unsubscribeMessages = aiChatRef.onSnapshot(snapshot => {
                 messagesContainer.innerHTML = '';
@@ -865,7 +1164,6 @@
                     messagesContainer.appendChild(messageDiv);
                 });
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                // Bip pour les messages de l'IA
                 snapshot.docChanges().forEach(change => {
                     if (change.type === 'added') {
                         const msg = change.doc.data();
@@ -879,13 +1177,11 @@
             sendBtn.onclick = () => {
                 const text = messageText.value.trim();
                 if (!text) return;
-                // Ajouter le message de l'utilisateur
                 db.collection('aiChats').doc(currentUser.uid).collection('messages').add({
                     text: text,
                     sender: 'user',
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 }).then(() => {
-                    // Générer une réponse de l'IA
                     const response = generateAIResponse(text);
                     db.collection('aiChats').doc(currentUser.uid).collection('messages').add({
                         text: response,
@@ -897,10 +1193,10 @@
             };
         }
 
-        // Fonction de réponse de l'IA (calculatrice + logique simple)
+        // Fonction de réponse de l'IA améliorée
         function generateAIResponse(input) {
             input = input.trim().toLowerCase();
-            // Gestion des calculs simples (ex: "2+2", "10-3", "5*6", "12/4")
+            // Calculs simples
             const mathPattern = /^(\d+)\s*([\+\-\*\/])\s*(\d+)$/;
             const match = input.match(mathPattern);
             if (match) {
@@ -917,18 +1213,28 @@
                 return `Le résultat est : ${result}`;
             }
 
+            // Questions sur l'identité
+            if (input.includes('comment tu t\'appelles') || input.includes('ton nom') || input.includes('qui es-tu')) {
+                return "Je m'appelle CHARLES, une IA développée par CHARTECH. Je suis là pour vous aider !";
+            }
+            if (input.includes('qui t\'a créé') || input.includes('ton créateur')) {
+                return "J'ai été créé par CHARTECH, une équipe de développeurs passionnés.";
+            }
             // Salutations
-            if (input.includes('bonjour') || input.includes('salut')) {
-                return 'Bonjour ! Comment puis-je vous aider ?';
+            if (input.includes('bonjour') || input.includes('salut') || input.includes('hello')) {
+                return "Bonjour ! Comment puis-je vous aider ?";
             }
             if (input.includes('comment ça va') || input.includes('comment tu vas')) {
-                return 'Je vais bien, merci ! Et vous ?';
+                return "Je vais très bien, merci ! Et vous ?";
             }
             if (input.includes('merci')) {
-                return 'Avec plaisir !';
+                return "Avec plaisir ! N'hésitez pas si vous avez d'autres questions.";
+            }
+            if (input.includes('au revoir') || input.includes('bye')) {
+                return "Au revoir ! Passez une excellente journée.";
             }
             // Réponse par défaut
-            return "Je suis CHARLES, votre assistant. Je peux répondre à des questions simples et faire des calculs. Posez-moi une question !";
+            return "Je suis CHARLES, votre assistant intelligent. Je peux répondre à des questions simples et faire des calculs. Posez-moi une question !";
         }
 
         // Gestion de la langue

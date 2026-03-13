@@ -1,921 +1,528 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CHARLES</title>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        /* Variables de thème - thème 1 (Bleu néon) par défaut */
-        :root {
-            --bg-primary: #0a0f1e;
-            --bg-secondary: #1a1f30;
-            --text-primary: #e0e0ff;
-            --accent: #00ffff;
-            --accent-glow: 0 0 10px #00ffff;
-            --border: #2a2f40;
-            --message-user: #00aaff;
-            --message-other: #2a2f40;
-            --shadow: 0 0 15px rgba(0, 255, 255, 0.3);
-        }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CHARLES - Messenger (mobile ready)</title>
 
-        /* Thème 2 : Noir et or */
-        body.theme2 {
-            --bg-primary: #000000;
-            --bg-secondary: #1a1a1a;
-            --text-primary: #ffd700;
-            --accent: #ffd700;
-            --accent-glow: 0 0 10px #ffd700;
-            --border: #333333;
-            --message-user: #b8860b;
-            --message-other: #333333;
-            --shadow: 0 0 15px rgba(255, 215, 0, 0.3);
-        }
+<!-- Firebase compat libs (Firestore + Auth + Realtime DB) -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 
-        /* Thème 3 : Rouge et orange */
-        body.theme3 {
-            --bg-primary: #1e0000;
-            --bg-secondary: #2a0000;
-            --text-primary: #ffaa88;
-            --accent: #ff4500;
-            --accent-glow: 0 0 10px #ff4500;
-            --border: #440000;
-            --message-user: #ff3300;
-            --message-other: #440000;
-            --shadow: 0 0 15px rgba(255, 69, 0, 0.3);
-        }
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
-        /* Thème 4 : Vert et vert */
-        body.theme4 {
-            --bg-primary: #001100;
-            --bg-secondary: #002200;
-            --text-primary: #aaffaa;
-            --accent: #00ff00;
-            --accent-glow: 0 0 10px #00ff00;
-            --border: #004400;
-            --message-user: #00cc00;
-            --message-other: #004400;
-            --shadow: 0 0 15px rgba(0, 255, 0, 0.3);
-        }
-
-        /* Thème 5 : Blanc et or */
-        body.theme5 {
-            --bg-primary: #f5f5f5;
-            --bg-secondary: #ffffff;
-            --text-primary: #333333;
-            --accent: #ffd700;
-            --accent-glow: 0 0 10px #ffd700;
-            --border: #dddddd;
-            --message-user: #ffd700;
-            --message-other: #e0e0e0;
-            --shadow: 0 0 15px rgba(255, 215, 0, 0.3);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: background-color 0.3s, color 0.3s;
-            overflow: hidden; /* Empêche le scroll global sur mobile */
-        }
-
-        #app {
-            width: 100%;
-            max-width: 1200px;
-            height: 100vh; /* 100vh pour mobile, réduit pour desktop plus bas */
-            background: var(--bg-secondary);
-            box-shadow: var(--shadow);
-            display: flex;
-            flex-direction: column;
-            position: relative;
-        }
-
-        @media (min-width: 769px) {
-            #app {
-                height: 90vh;
-                border-radius: 20px;
-                overflow: hidden;
-            }
-        }
-
-        /* Écran de connexion */
-        #auth-screen {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            padding: 20px;
-        }
-
-        .auth-tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .auth-tab {
-            padding: 10px 20px;
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-primary);
-            cursor: pointer;
-            border-radius: 5px;
-            transition: 0.3s;
-        }
-
-        .auth-tab.active {
-            background: var(--accent);
-            color: var(--bg-primary);
-            box-shadow: var(--accent-glow);
-        }
-
-        .auth-form {
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            max-width: 300px;
-            gap: 15px;
-        }
-
-        .auth-form input {
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            background: var(--bg-primary);
-            color: var(--text-primary);
-        }
-
-        .auth-form button {
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            background: var(--accent);
-            color: var(--bg-primary);
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: var(--accent-glow);
-            transition: 0.2s;
-        }
-
-        /* Interface principale */
-        #main-screen {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            display: none;
-        }
-
-        /* Barre de navigation */
-        .navbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            border-bottom: 1px solid var(--border);
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .nav-tabs {
-            display: flex;
-            gap: 10px;
-            overflow-x: auto;
-            scrollbar-width: none; /* Firefox */
-        }
-        .nav-tabs::-webkit-scrollbar { display: none; } /* Chrome */
-
-        .nav-tab {
-            padding: 8px 12px;
-            cursor: pointer;
-            border-radius: 20px;
-            transition: 0.3s;
-            font-weight: 500;
-            white-space: nowrap;
-            font-size: 0.9rem;
-        }
-
-        .nav-tab.active {
-            background: var(--accent);
-            color: var(--bg-primary);
-            box-shadow: var(--accent-glow);
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 0.9rem;
-        }
-
-        .user-info button {
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-primary);
-            padding: 5px 10px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        /* Contenu principal */
-        .content {
-            flex: 1;
-            display: flex;
-            overflow: hidden;
-            position: relative;
-        }
-
-        /* Liste des conversations */
-        .conversation-list {
-            width: 300px;
-            border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            background: var(--bg-secondary);
-            z-index: 10;
-        }
-
-        .list-header {
-            padding: 15px;
-            font-weight: bold;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .add-btn {
-            background: transparent;
-            border: 1px solid var(--accent);
-            color: var(--accent);
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            cursor: pointer;
-            font-size: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: 0.3s;
-        }
-
-        .add-btn:hover {
-            background: var(--accent);
-            color: var(--bg-primary);
-        }
-
-        #conversations-container {
-            flex: 1;
-            overflow-y: auto;
-        }
-
-        .conversation-item {
-            padding: 15px;
-            border-bottom: 1px solid var(--border);
-            cursor: pointer;
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .conversation-item:hover {
-            background: var(--bg-primary);
-        }
-
-        .conversation-item.selected {
-            background: var(--bg-primary);
-            border-left: 4px solid var(--accent);
-        }
-
-        /* Zone de chat */
-        .chat-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background: var(--bg-secondary);
-            height: 100%;
-        }
-
-        .chat-header {
-            padding: 15px;
-            border-bottom: 1px solid var(--border);
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .back-btn {
-            display: none;
-            background: transparent;
-            border: none;
-            color: var(--accent);
-            font-size: 1.2rem;
-            cursor: pointer;
-        }
-
-        .messages {
-            flex: 1;
-            padding: 15px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            scroll-behavior: smooth;
-        }
-
-        .message {
-            max-width: 80%;
-            padding: 10px 15px;
-            border-radius: 18px;
-            word-wrap: break-word;
-            line-height: 1.4;
-        }
-
-        .message.user {
-            align-self: flex-end;
-            background: var(--message-user);
-            color: white;
-            border-bottom-right-radius: 5px;
-        }
-
-        .message.other {
-            align-self: flex-start;
-            background: var(--message-other);
-            color: var(--text-primary);
-            border-bottom-left-radius: 5px;
-        }
-
-        .message-input {
-            display: flex;
-            padding: 15px;
-            gap: 10px;
-            border-top: 1px solid var(--border);
-            background: var(--bg-secondary);
-        }
-
-        .message-input input {
-            flex: 1;
-            padding: 12px 20px;
-            border-radius: 25px;
-            border: 1px solid var(--border);
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            font-size: 1rem;
-        }
-        
-        .message-input input:focus {
-            outline: none;
-            border-color: var(--accent);
-        }
-
-        .message-input button {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            border: none;
-            background: var(--accent);
-            color: var(--bg-primary);
-            cursor: pointer;
-            box-shadow: var(--accent-glow);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* RESPONSIVE DESIGN MOBILE */
-        @media (max-width: 768px) {
-            .conversation-list {
-                width: 100%;
-                border-right: none;
-            }
-            .chat-area {
-                display: none; /* Caché par défaut sur mobile */
-                width: 100%;
-                position: absolute;
-                top: 0;
-                left: 0;
-                z-index: 20;
-            }
-            .back-btn {
-                display: block; /* Affiche le bouton retour sur mobile */
-            }
-            .user-info span {
-                display: none; /* Cache l'email sur mobile pour gagner de la place */
-            }
-            
-            /* Classes pour gérer l'affichage mobile via JS */
-            .show-chat .conversation-list { display: none; }
-            .show-chat .chat-area { display: flex; }
-        }
-
-        /* Paramètres et Modals (inchangés visuellement mais ajustés) */
-        #settings-screen {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-            display: none;
-        }
-
-        .settings-section { margin-bottom: 30px; }
-        .settings-title { font-size: 1.2rem; margin-bottom: 15px; color: var(--accent); }
-        .theme-buttons { display: flex; flex-wrap: wrap; gap: 10px; }
-        .theme-btn { padding: 10px 20px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary); cursor: pointer; border-radius: 5px; }
-        .theme-btn:hover { border-color: var(--accent); }
-        .language-select { padding: 10px; background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border); border-radius: 5px; }
-        .support-btn { display: inline-block; padding: 12px 24px; background: var(--accent); color: var(--bg-primary); text-decoration: none; border-radius: 8px; font-weight: bold; }
-
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-        .modal.hidden { display: none; }
-        .modal-content { background: var(--bg-secondary); padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; border: 1px solid var(--accent); box-shadow: var(--shadow); }
-        .modal-content h3 { margin-bottom: 15px; color: var(--accent); }
-        .modal-content input, .modal-content textarea { width: 100%; padding: 12px; margin-bottom: 10px; background: var(--bg-primary); border: 1px solid var(--border); color: var(--text-primary); border-radius: 5px; }
-        .modal-content textarea { min-height: 80px; resize: vertical; }
-        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; }
-        .modal-actions button { padding: 10px 16px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        .modal-actions .cancel { background: transparent; border: 1px solid var(--border); color: var(--text-primary); }
-        .modal-actions .confirm { background: var(--accent); color: var(--bg-primary); }
-
-        #beep { display: none; }
-    </style>
+<style>
+  :root{
+    --bg:#151515; --panel:#1f1f1f; --muted:#a8a8a8; --accent:#ffd700; --text:#fff;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;font-family: "Segoe UI", Roboto, Arial; }
+  html,body{height:100%; margin:0; background:var(--bg); color:var(--text);}
+  #app{max-width:1100px;margin:0 auto;height:100vh;display:flex;flex-direction:column;padding:12px;}
+  /* NAV */
+  .nav{display:flex;align-items:center;gap:12px;padding:10px 6px;}
+  .tabs{display:flex;gap:10px;flex:1;}
+  .tab{padding:8px 12px;border-radius:999px;background:transparent;color:var(--muted);cursor:pointer}
+  .tab.active{background:var(--accent);color:#111}
+  .user-info{display:flex;align-items:center;gap:8px}
+  /* layout */
+  .shell{flex:1;display:flex;gap:12px;height:calc(100% - 64px);}
+  .left{width:340px;background:var(--panel);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;border:1px solid rgba(255,255,255,0.03)}
+  .right{flex:1;background:var(--panel);border-radius:var(--radius);overflow:hidden;border:1px solid rgba(255,255,255,0.03);display:flex;flex-direction:column}
+  .list-header{padding:12px 14px;font-weight:700;border-bottom:1px solid rgba(255,255,255,0.03);display:flex;justify-content:space-between;align-items:center}
+  .conversations{flex:1;overflow:auto}
+  .conv-item{padding:12px;display:flex;gap:10px;align-items:center;border-bottom:1px solid rgba(255,255,255,0.02);cursor:pointer}
+  .conv-item:hover{background:rgba(255,255,255,0.01)}
+  .conv-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--accent);color:#111;font-weight:700}
+  .conv-title{font-weight:600}
+  .online-dot{width:10px;height:10px;border-radius:50%;background:#00ff7f;border:2px solid var(--panel)}
+  /* chat area */
+  .chat-header{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.03);display:flex;align-items:center;gap:12px}
+  .messages{flex:1;padding:12px;overflow:auto;display:flex;flex-direction:column;gap:8px}
+  .message{max-width:75%;padding:10px 12px;border-radius:14px;line-height:1.3}
+  .message.user{align-self:flex-end;background:linear-gradient(90deg,#ffd700,#ffcc00);color:#111;border-bottom-right-radius:4px}
+  .message.other{align-self:flex-start;background:rgba(255,255,255,0.03);color:var(--text)}
+  .input-area{display:flex;gap:8px;padding:12px;border-top:1px solid rgba(255,255,255,0.03);align-items:center}
+  .input-area input{flex:1;padding:10px 12px;border-radius:999px;border:1px solid rgba(255,255,255,0.05);background:transparent;color:var(--text)}
+  .send-btn{width:46px;height:46px;border-radius:50%;background:var(--accent);color:#111;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer}
+  /* modal simple */
+  .modal{position:fixed;left:0;top:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);z-index:999}
+  .modal-box{width:92%;max-width:420px;background:var(--panel);padding:16px;border-radius:12px;border:1px solid rgba(255,255,255,0.04)}
+  .row{display:flex;gap:8px;align-items:center}
+  .btn{padding:8px 12px;border-radius:8px;cursor:pointer;border:none}
+  .btn.primary{background:var(--accent);color:#111}
+  /* responsive mobile: show list or chat */
+  @media (max-width:780px){
+    .shell{flex-direction:column;height:calc(100% - 64px)}
+    .left{width:100%;height:50vh;border-radius:12px}
+    .right{width:100%;height:50vh;border-radius:12px}
+    /* show list by default; when .show-chat is on body, show chat instead */
+    body.show-chat .left{display:none}
+    body.show-chat .right{display:flex}
+  }
+  /* helper */
+  .badge{background:#ff4d4d;padding:4px 8px;border-radius:12px;font-size:12px;color:#111}
+  .muted{color:var(--muted)}
+  .small{font-size:13px}
+</style>
 </head>
 <body>
-    <div id="app">
-        <div id="auth-screen">
-            <h1 style="margin-bottom: 30px; color: var(--accent); font-size: 2.5rem; letter-spacing: 2px;">CHARLES</h1>
-            <div class="auth-tabs">
-                <div class="auth-tab active" data-auth="email">Email</div>
-                <div class="auth-tab" data-auth="phone">Téléphone</div>
-            </div>
-            <div id="email-auth" class="auth-form">
-                <input type="email" id="email" placeholder="Email" required>
-                <input type="password" id="password" placeholder="Mot de passe" required>
-                <button id="login-btn">Se connecter</button>
-                <button id="signup-btn">S'inscrire</button>
-            </div>
-            <div id="phone-auth" class="auth-form" style="display: none;">
-                <input type="tel" id="phone" placeholder="Numéro (ex: +243...)" required>
-                <div id="recaptcha-container" style="margin: 10px 0;"></div>
-                <button id="phone-login-btn">Envoyer le code</button>
-                <input type="text" id="verification-code" placeholder="Code de vérification" style="display: none;">
-                <button id="verify-code-btn" style="display: none;">Vérifier</button>
-            </div>
+
+<div id="app">
+  <div class="nav">
+    <div class="tabs">
+      <div class="tab active" data-tab="private">💬 IA CP</div>
+      <div class="tab" data-tab="group">👥 CG</div>
+      <div class="tab" data-tab="ai">🤖 IA Charles</div>
+      <div class="tab" data-tab="settings">⚙️</div>
+    </div>
+    <div class="user-info">
+      <span id="user-display" class="muted small"></span>
+      <button id="logout" class="btn">Déconnexion</button>
+    </div>
+  </div>
+
+  <div class="shell">
+    <div class="left" id="left-panel">
+      <div class="list-header">
+        <div id="list-title">Conversations</div>
+        <div>
+          <button id="add-btn" class="btn">➕</button>
         </div>
-
-        <div id="main-screen">
-            <div class="navbar">
-                <div class="nav-tabs">
-                    <div class="nav-tab active" data-tab="private">💬 IA CP</div>
-                    <div class="nav-tab" data-tab="group">👥 CG</div>
-                    <div class="nav-tab" data-tab="ai">🤖 IA Charles</div>
-                    <div class="nav-tab" data-tab="settings">⚙️</div>
-                </div>
-                <div class="user-info">
-                    <span id="user-display"></span>
-                    <button id="logout-btn"><i class="fas fa-sign-out-alt"></i></button>
-                </div>
-            </div>
-            
-            <div class="content" id="main-content">
-                <div id="conversation-list" class="conversation-list">
-                    <div class="list-header">
-                        <span id="list-header">Conversations</span>
-                        <button id="add-conversation-btn" class="add-btn"><i class="fas fa-plus"></i></button>
-                    </div>
-                    <div id="conversations-container"></div>
-                </div>
-
-                <div class="chat-area" id="chat-area">
-                    <div class="chat-header">
-                        <button class="back-btn" id="back-to-list"><i class="fas fa-arrow-left"></i></button>
-                        <span id="chat-header-title">Sélectionnez une conversation</span>
-                    </div>
-                    <div class="messages" id="messages-container"></div>
-                    <div class="message-input" id="message-input-area" style="display: none;">
-                        <input type="text" id="message-text" placeholder="Votre message..." autocomplete="off">
-                        <button id="send-message"><i class="fas fa-paper-plane"></i></button>
-                    </div>
-                </div>
-            </div>
-
-            <div id="settings-screen">
-                <div class="settings-section">
-                    <div class="settings-title">Thème</div>
-                    <div class="theme-buttons">
-                        <button class="theme-btn" data-theme="1">Bleu néon</button>
-                        <button class="theme-btn" data-theme="2">Noir & Or</button>
-                        <button class="theme-btn" data-theme="3">Rouge & Orange</button>
-                        <button class="theme-btn" data-theme="4">Vert Hacker</button>
-                        <button class="theme-btn" data-theme="5">Blanc & Or</button>
-                    </div>
-                </div>
-                <div class="settings-section">
-                    <div class="settings-title">Langue</div>
-                    <select id="language-select" class="language-select">
-                        <option value="fr">Français</option>
-                        <option value="en">English</option>
-                    </select>
-                </div>
-                <div class="settings-section">
-                    <div class="settings-title">Soutenir CHARTECH</div>
-                    <p style="margin-bottom: 10px;">Orange Money : <strong>0892959679</strong></p>
-                    <a href="#" class="support-btn" id="copy-support"><i class="fas fa-copy"></i> Copier le numéro</a>
-                </div>
-            </div>
-        </div>
-
-        <div id="new-private-modal" class="modal hidden">
-            <div class="modal-content">
-                <h3 id="modal-private-title">Nouvelle conversation</h3>
-                <input type="text" id="private-contact" placeholder="Email ou téléphone du destinataire">
-                <div class="modal-actions">
-                    <button class="cancel" id="cancel-private">Annuler</button>
-                    <button class="confirm" id="create-private">Démarrer</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="new-group-modal" class="modal hidden">
-            <div class="modal-content">
-                <h3 id="modal-group-title">Nouveau groupe</h3>
-                <input type="text" id="group-name" placeholder="Nom du groupe">
-                <textarea id="group-members" placeholder="Emails ou téléphones des participants (séparés par des virgules)"></textarea>
-                <div class="modal-actions">
-                    <button class="cancel" id="cancel-group">Annuler</button>
-                    <button class="confirm" id="create-group">Créer le groupe</button>
-                </div>
-            </div>
-        </div>
+      </div>
+      <div class="conversations" id="conversations"></div>
     </div>
 
-    <audio id="beep" src="data:audio/wav;base64,UklGRlwAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YVAAAAA8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"></audio>
+    <div class="right" id="chat-panel">
+      <div class="chat-header">
+        <div id="chat-title">Sélectionnez une conversation</div>
+        <div style="margin-left:auto" id="status-area"></div>
+      </div>
 
-    <script>
-        // --- 1. CONFIGURATION FIREBASE ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyBp2RhutYDFnqglXQrZaq4KJZpDJH1fmDk",
-            authDomain: "boeing-777-d5b8b.firebaseapp.com",
-            projectId: "boeing-777-d5b8b",
-            storageBucket: "boeing-777-d5b8b.firebasestorage.app",
-            messagingSenderId: "1001844513991",
-            appId: "1:1001844513991:web:4e4cd474abe651c44232e2",
-            measurementId: "G-D7ZC4XYSKK"
-        };
+      <div class="messages" id="messages"></div>
 
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+      <div class="input-area" id="input-area" style="display:none">
+        <input id="message-input" placeholder="Écrire un message..." autocomplete="off"/>
+        <button id="send-btn" class="send-btn"><i class="fas fa-paper-plane"></i></button>
+      </div>
+    </div>
+  </div>
+</div>
 
-        // --- 2. VARIABLES ET ELEMENTS DOM ---
-        let currentUser = null;
-        let currentTab = 'private';
-        let currentConversationId = null;
-        let currentConversationType = null;
-        let unsubscribeMessages = null;
-        let conversationsListener = null;
+<!-- modal create private -->
+<div id="modal-private" class="modal" style="display:none">
+  <div class="modal-box">
+    <h3>Nouvelle conversation privée</h3>
+    <input id="private-contact" placeholder="Email ou téléphone (+243...)" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);margin:8px 0;background:transparent;color:var(--text)"/>
+    <div style="display:flex;justify-content:flex-end;gap:8px">
+      <button id="cancel-private" class="btn">Annuler</button>
+      <button id="create-private" class="btn primary">Démarrer</button>
+    </div>
+  </div>
+</div>
 
-        const mainContent = document.getElementById('main-content');
-        const backToListBtn = document.getElementById('back-to-list');
-        const chatHeaderTitle = document.getElementById('chat-header-title');
-        const messagesContainer = document.getElementById('messages-container');
-        const messageInputArea = document.getElementById('message-input-area');
-        const messageText = document.getElementById('message-text');
+<!-- hidden audio -->
+<audio id="notify-sound" src="data:audio/wav;base64,UklGRlIAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="></audio>
 
-        // --- 3. GESTION DU RESPONSIVE (MOBILE) ---
-        backToListBtn.addEventListener('click', () => {
-            mainContent.classList.remove('show-chat');
-            currentConversationId = null;
-        });
+<script>
+/* --------------------
+  CONFIGURATION FIREBASE (TA CONFIGURATION)
+  Remplace databaseURL si elle est différente dans ta console Realtime DB
+   -------------------- */
+const firebaseConfig = {
+    apiKey: "AIzaSyBp2RhutYDFnqglXQrZaq4KJZpDJH1fmDk",
+    authDomain: "boeing-777-d5b8b.firebaseapp.com",
+    projectId: "boeing-777-d5b8b",
+    storageBucket: "boeing-777-d5b8b.firebasestorage.app",
+    messagingSenderId: "1001844513991",
+    appId: "1:1001844513991:web:4e4cd474abe651c44232e2",
+    measurementId: "G-D7ZC4XYSKK",
+    // databaseURL ajouté pour Realtime DB (présence). Remplace si besoin par l'URL exacte depuis ta console Firebase.
+    databaseURL: "https://boeing-777-d5b8b-default-rtdb.firebaseio.com"
+};
 
-        function openMobileChat() {
-            if (window.innerWidth <= 768) {
-                mainContent.classList.add('show-chat');
-            }
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const rdb = firebase.database();
+
+/* --------------------
+  ELEMENTS
+  -------------------- */
+const conversationsEl = document.getElementById('conversations');
+const messagesEl = document.getElementById('messages');
+const messageInput = document.getElementById('message-input');
+const sendBtn = document.getElementById('send-btn');
+const addBtn = document.getElementById('add-btn');
+const modalPrivate = document.getElementById('modal-private');
+const createPrivateBtn = document.getElementById('create-private');
+const cancelPrivateBtn = document.getElementById('cancel-private');
+const privateContactInput = document.getElementById('private-contact');
+const chatTitle = document.getElementById('chat-title');
+const inputArea = document.getElementById('input-area');
+const userDisplay = document.getElementById('user-display');
+const notifySound = document.getElementById('notify-sound');
+
+/* --------------------
+  ÉTAT
+  -------------------- */
+let currentUser = null;
+let currentTab = 'private';
+let currentConvId = null;
+let currentConvType = null;
+let convMessagesUnsub = null;
+let convsUnsub = null;
+let presenceRefs = {}; // pour détacher les listeners de présence
+
+/* --------------------
+  AUTH (Gère l'état de la session)
+  - Si tu utilises déjà un écran de login dans ton app, garde-le; ici on écoute onAuthStateChanged.
+  -------------------- */
+auth.onAuthStateChanged(async user=>{
+  if(user){
+    currentUser = user;
+    userDisplay.textContent = user.email || user.phoneNumber || user.uid;
+    // set presence in RTDB
+    setUserPresence(user.uid);
+    // demander permission notifications
+    requestNotificationPermission();
+    // charger conversations
+    loadConversations(currentTab);
+  } else {
+    userDisplay.textContent = "Non connecté";
+    // option: redirect to login page si tu veux
+  }
+});
+
+/* --------------------
+  PRESENCE (Realtime Database)
+  -------------------- */
+function setUserPresence(uid){
+  const userStatusRef = rdb.ref('/status/' + uid);
+  const isOfflineForDB = { state:'offline', last_changed: firebase.database.ServerValue.TIMESTAMP };
+  const isOnlineForDB = { state:'online', last_changed: firebase.database.ServerValue.TIMESTAMP };
+
+  rdb.ref('.info/connected').on('value', (snap)=>{
+    if(snap.val() === false){
+      return;
+    }
+    userStatusRef.onDisconnect().set(isOfflineForDB).then(()=>{
+      userStatusRef.set(isOnlineForDB);
+    });
+  });
+
+  window.addEventListener('beforeunload', ()=>{
+    userStatusRef.set(isOfflineForDB);
+  });
+}
+
+/* helper pour écouter la présence d'un user */
+function watchUserPresence(otherId, elementToUpdate){
+  if(!otherId) return;
+  const refPath = '/status/' + otherId;
+  if(presenceRefs[otherId]) return;
+  const ref = rdb.ref(refPath);
+  presenceRefs[otherId] = ref;
+  ref.on('value', snapshot=>{
+    const val = snapshot.val();
+    const onlineElem = elementToUpdate.querySelector('.online-dot');
+    if(val && val.state === 'online'){
+      if(onlineElem) onlineElem.style.display = 'block';
+    } else {
+      if(onlineElem) onlineElem.style.display = 'none';
+    }
+  });
+}
+
+/* --------------------
+  CHARGER CONVERSATIONS
+  -------------------- */
+function loadConversations(type){
+  if(convsUnsub) convsUnsub();
+  conversationsEl.innerHTML = `<div style="padding:18px;text-align:center;color:var(--muted)">Chargement...</div>`;
+
+  const collection = type === 'private' ? 'privateConversations' : 'groups';
+  convsUnsub = db.collection(collection)
+    .where('participants','array-contains', currentUser.uid)
+    .orderBy('updatedAt','desc')
+    .onSnapshot(snapshot=>{
+      conversationsEl.innerHTML = '';
+      if(snapshot.empty){
+        conversationsEl.innerHTML = `<div style="padding:20px;color:var(--muted)">Aucune conversation. Appuie sur + pour en créer une.</div>`;
+        return;
+      }
+      snapshot.forEach(doc=>{
+        const data = doc.data();
+        let title = data.name || '';
+        let otherId = null;
+        if(collection === 'privateConversations'){
+          otherId = data.participants.find(p=>p !== currentUser.uid);
+        } else {
+          title = data.name || 'Groupe';
         }
-
-        // --- 4. TRADUCTIONS ET THEMES ---
-        const translations = {
-            fr: {
-                conversations: 'Conversations',
-                selectChat: 'Sélectionnez une conversation',
-                messagePlaceholder: 'Votre message...',
-                newPrivate: 'Nouvelle conversation',
-                newGroup: 'Nouveau groupe',
-                copy: 'Numéro copié !'
-            },
-            en: {
-                conversations: 'Chats',
-                selectChat: 'Select a chat',
-                messagePlaceholder: 'Type a message...',
-                newPrivate: 'New Chat',
-                newGroup: 'New Group',
-                copy: 'Number copied!'
-            }
-        };
-
-        let currentLang = 'fr';
-        document.getElementById('language-select').addEventListener('change', (e) => {
-            currentLang = e.target.value;
-            document.getElementById('list-header').innerText = translations[currentLang].conversations;
-            messageText.placeholder = translations[currentLang].messagePlaceholder;
+        if(!title && otherId) title = otherId;
+        const item = document.createElement('div');
+        item.className = 'conv-item';
+        item.dataset.convId = doc.id;
+        item.dataset.convType = collection === 'privateConversations' ? 'private' : 'group';
+        item.innerHTML = `
+          <div style="position:relative">
+            <div class="conv-avatar">${title.charAt(0).toUpperCase()}</div>
+            <div class="online-dot" style="position:absolute;right:-4px;bottom:-4px;display:none"></div>
+          </div>
+          <div style="flex:1">
+            <div class="conv-title">${title}</div>
+            <div class="small muted">${data.lastMessage ? data.lastMessage.substring(0,70) : ''}</div>
+          </div>
+          <div class="small muted">${data.updatedAt ? timeAgo(data.updatedAt.toMillis ? data.updatedAt.toMillis() : data.updatedAt) : ''}</div>
+        `;
+        item.addEventListener('click', ()=> {
+          document.querySelectorAll('.conv-item').forEach(i=>i.classList.remove('selected'));
+          item.classList.add('selected');
+          selectConversation(doc.id, item.dataset.convType, title, otherId);
+          if(window.innerWidth <= 780) document.body.classList.add('show-chat');
         });
 
-        const savedTheme = localStorage.getItem('theme') || '1';
-        document.body.className = `theme${savedTheme}`;
-        document.querySelectorAll('.theme-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.body.className = `theme${btn.dataset.theme}`;
-                localStorage.setItem('theme', btn.dataset.theme);
-            });
-        });
+        conversationsEl.appendChild(item);
 
-        document.getElementById('copy-support').addEventListener('click', (e) => {
-            e.preventDefault();
-            navigator.clipboard.writeText('0892959679').then(() => alert(translations[currentLang].copy));
-        });
-
-        // --- 5. AUTHENTIFICATION ---
-        // Gestion des onglets Login
-        document.querySelectorAll('.auth-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                if (tab.dataset.auth === 'email') {
-                    document.getElementById('email-auth').style.display = 'flex';
-                    document.getElementById('phone-auth').style.display = 'none';
-                } else {
-                    document.getElementById('email-auth').style.display = 'none';
-                    document.getElementById('phone-auth').style.display = 'flex';
-                }
-            });
-        });
-
-        // Email Login / Signup
-        document.getElementById('signup-btn').addEventListener('click', () => {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            auth.createUserWithEmailAndPassword(email, password)
-                .then(cred => db.collection('users').doc(cred.user.uid).set({ email, displayName: email.split('@')[0] }))
-                .catch(err => alert(err.message));
-        });
-
-        document.getElementById('login-btn').addEventListener('click', () => {
-            auth.signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('password').value)
-                .catch(err => alert("Erreur : " + err.message));
-        });
-
-        // Phone Login
-        let appVerifier, confirmationResult;
-        document.getElementById('phone-login-btn').addEventListener('click', () => {
-            if (!appVerifier) appVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'normal' });
-            auth.signInWithPhoneNumber(document.getElementById('phone').value, appVerifier)
-                .then(conf => {
-                    confirmationResult = conf;
-                    document.getElementById('phone-login-btn').style.display = 'none';
-                    document.getElementById('verification-code').style.display = 'block';
-                    document.getElementById('verify-code-btn').style.display = 'block';
-                }).catch(err => alert(err.message));
-        });
-
-        document.getElementById('verify-code-btn').addEventListener('click', () => {
-            confirmationResult.confirm(document.getElementById('verification-code').value).catch(err => alert(err.message));
-        });
-
-        document.getElementById('logout-btn').addEventListener('click', () => auth.signOut());
-
-        // Surveiller l'état de connexion
-        auth.onAuthStateChanged(async user => {
-            if (user) {
-                currentUser = user;
-                document.getElementById('auth-screen').style.display = 'none';
-                document.getElementById('main-screen').style.display = 'flex';
-                document.getElementById('user-display').textContent = user.email || user.phoneNumber;
-                
-                // S'assurer que le user existe en base
-                const userDoc = await db.collection('users').doc(user.uid).get();
-                if (!userDoc.exists) {
-                    await db.collection('users').doc(user.uid).set({
-                        email: user.email || '', phoneNumber: user.phoneNumber || '',
-                        displayName: user.email ? user.email.split('@')[0] : user.phoneNumber
-                    });
-                }
-                loadConversations('private');
-            } else {
-                currentUser = null;
-                document.getElementById('auth-screen').style.display = 'flex';
-                document.getElementById('main-screen').style.display = 'none';
-                if (unsubscribeMessages) unsubscribeMessages();
-                if (conversationsListener) conversationsListener();
-            }
-        });
-
-        // --- 6. NAVIGATION PRINCIPALE ---
-        document.querySelectorAll('.nav-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                currentTab = tab.dataset.tab;
-                mainContent.classList.remove('show-chat'); // Retour à la liste sur mobile
-
-                if (currentTab === 'settings') {
-                    document.getElementById('conversation-list').style.display = 'none';
-                    document.getElementById('chat-area').style.display = 'none';
-                    document.getElementById('settings-screen').style.display = 'block';
-                } else {
-                    document.getElementById('settings-screen').style.display = 'none';
-                    document.getElementById('conversation-list').style.display = 'flex';
-                    document.getElementById('chat-area').style.display = 'flex';
-                    
-                    if (currentTab === 'ai') {
-                        document.getElementById('conversation-list').style.display = 'none';
-                        openMobileChat();
-                        startAIChat();
-                    } else {
-                        loadConversations(currentTab);
-                    }
-                }
-            });
-        });
-
-        // --- 7. CHARGEMENT ET CREATION DES CONVERSATIONS ---
-        function loadConversations(type) {
-            if (conversationsListener) conversationsListener();
-            const container = document.getElementById('conversations-container');
-            container.innerHTML = '<div style="padding:15px; text-align:center;"><i class="fas fa-spinner fa-spin"></i></div>';
-
-            const collection = type === 'private' ? 'privateConversations' : 'groups';
-            
-            conversationsListener = db.collection(collection)
-                .where('participants', 'array-contains', currentUser.uid)
-                .onSnapshot(async snapshot => {
-                    container.innerHTML = '';
-                    if (snapshot.empty) {
-                        container.innerHTML = `<div class="conversation-item" style="color:var(--text-primary);opacity:0.6;">Aucune conversation. Cliquez sur +</div>`;
-                        return;
-                    }
-
-                    // On utilise un tableau pour garantir l'ordre et gérer l'asynchrone proprement
-                    for (let doc of snapshot.docs) {
-                        const data = doc.data();
-                        let title = 'Groupe sans nom';
-                        
-                        if (type === 'private') {
-                            const otherId = data.participants.find(p => p !== currentUser.uid);
-                            if (otherId) {
-                                const userDoc = await db.collection('users').doc(otherId).get();
-                                title = userDoc.exists && userDoc.data().displayName ? userDoc.data().displayName : otherId;
-                            }
-                        } else {
-                            title = data.name || title;
-                        }
-
-                        const item = document.createElement('div');
-                        item.className = 'conversation-item';
-                        item.innerHTML = `<div style="width:40px;height:40px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:var(--bg-primary);font-weight:bold;">${title.charAt(0).toUpperCase()}</div><div>${title}</div>`;
-                        
-                        item.addEventListener('click', () => {
-                            document.querySelectorAll('.conversation-item').forEach(i => i.classList.remove('selected'));
-                            item.classList.add('selected');
-                            selectConversation(doc.id, type, title);
-                        });
-                        container.appendChild(item);
-                    }
-                });
+        if(otherId){
+          watchUserPresence(otherId, item);
         }
+      });
+    }, err=>{
+      console.error('Erreur loadConversations', err);
+      conversationsEl.innerHTML = `<div style="padding:20px;color:var(--muted)">Erreur: ${err.message}</div>`;
+    });
+}
 
-        // Modals +
-        document.getElementById('add-conversation-btn').addEventListener('click', () => {
-            if (currentTab === 'private') document.getElementById('new-private-modal').classList.remove('hidden');
-            else if (currentTab === 'group') document.getElementById('new-group-modal').classList.remove('hidden');
-        });
+/* --------------------
+  SELECTION CONVERSATION + MESSAGES
+  -------------------- */
+function selectConversation(convId, type, title, otherId){
+  if(convMessagesUnsub) convMessagesUnsub();
+  currentConvId = convId;
+  currentConvType = type;
+  chatTitle.textContent = title;
+  inputArea.style.display = 'flex';
+  messagesEl.innerHTML = `<div style="padding:20px;color:var(--muted)">Chargement des messages...</div>`;
 
-        document.getElementById('cancel-private').addEventListener('click', () => document.getElementById('new-private-modal').classList.add('hidden'));
-        document.getElementById('cancel-group').addEventListener('click', () => document.getElementById('new-group-modal').classList.add('hidden'));
+  const coll = type === 'private' ? 'privateConversations' : 'groups';
+  const messagesRef = db.collection(coll).doc(convId).collection('messages').orderBy('timestamp');
 
-        document.getElementById('create-private').addEventListener('click', async () => {
-            const contact = document.getElementById('private-contact').value.trim();
-            if (!contact) return;
-            
-            const userQuery = contact.includes('@') ? db.collection('users').where('email', '==', contact) : db.collection('users').where('phoneNumber', '==', contact);
-            const snapshot = await userQuery.get();
-            
-            if (snapshot.empty) return alert("Utilisateur non trouvé");
-            const otherUserId = snapshot.docs[0].id;
-            if (otherUserId === currentUser.uid) return alert("C'est vous !");
+  convMessagesUnsub = messagesRef.onSnapshot(snapshot=>{
+    const changes = snapshot.docChanges();
+    if(changes.length === 0 && snapshot.empty){
+      messagesEl.innerHTML = `<div style="padding:20px;color:var(--muted)">Pas encore de messages</div>`;
+    } else {
+      messagesEl.innerHTML = '';
+      snapshot.forEach(doc=>{
+        const msg = doc.data();
+        const d = document.createElement('div');
+        d.className = 'message ' + (msg.senderId === currentUser.uid ? 'user' : 'other');
+        d.textContent = msg.text;
+        messagesEl.appendChild(d);
+      });
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
 
-            const existingConv = await db.collection('privateConversations').where('participants', 'array-contains', currentUser.uid).get();
-            let convId = null;
-            existingConv.forEach(d => { if (d.data().participants.includes(otherUserId) && d.data().participants.length === 2) convId = d.id; });
-
-            if (!convId) {
-                const newConv = await db.collection('privateConversations').add({ participants: [currentUser.uid, otherUserId], createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-                convId = newConv.id;
-            }
-            
-            document.getElementById('new-private-modal').classList.add('hidden');
-            document.getElementById('private-contact').value = '';
-        });
-
-        // --- 8. GESTION DES MESSAGES ---
-        function selectConversation(id, type, title) {
-            if (unsubscribeMessages) unsubscribeMessages();
-            currentConversationId = id;
-            chatHeaderTitle.innerText = title;
-            messageInputArea.style.display = 'flex';
-            openMobileChat(); // Affiche le chat sur mobile
-
-            const coll = type === 'private' ? 'privateConversations' : 'groups';
-            
-            unsubscribeMessages = db.collection(coll).doc(id).collection('messages').orderBy('timestamp')
-                .onSnapshot(snapshot => {
-                    messagesContainer.innerHTML = '';
-                    snapshot.forEach(doc => {
-                        const msg = doc.data();
-                        const div = document.createElement('div');
-                        div.className = `message ${msg.senderId === currentUser.uid ? 'user' : 'other'}`;
-                        div.textContent = msg.text;
-                        messagesContainer.appendChild(div);
-                    });
-                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                });
-
-            document.getElementById('send-message').onclick = () => sendMessage(coll, id);
-            messageText.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(coll, id); };
+    changes.forEach(change=>{
+      if(change.type === 'added'){
+        const msg = change.doc.data();
+        if(msg.senderId && msg.senderId !== currentUser.uid){
+          showNotification(title, msg.text);
         }
+      }
+    });
 
-        function sendMessage(collection, id) {
-            const text = messageText.value.trim();
-            if (!text) return;
-            db.collection(collection).doc(id).collection('messages').add({
-                text: text,
-                senderId: currentUser.uid,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            messageText.value = '';
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }
+  }, err =>{
+    console.error('messages err', err);
+  });
+}
 
-        // --- 9. IA CHARLES ---
-        function startAIChat() {
-            chatHeaderTitle.innerText = 'Discussion avec CHARLES';
-            messageInputArea.style.display = 'flex';
-            if (unsubscribeMessages) unsubscribeMessages();
+/* --------------------
+  ENVOYER MESSAGE
+  -------------------- */
+async function sendMessage(){
+  const text = messageInput.value.trim();
+  if(!text || !currentConvId) return;
+  const coll = currentConvType === 'private' ? 'privateConversations' : 'groups';
+  const messagesRef = db.collection(coll).doc(currentConvId).collection('messages');
+  await messagesRef.add({
+    text,
+    senderId: currentUser.uid,
+    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  await db.collection(coll).doc(currentConvId).update({
+    lastMessage: text,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  }).catch(()=>{});
+  messageInput.value = '';
+}
 
-            unsubscribeMessages = db.collection('aiChats').doc(currentUser.uid).collection('messages').orderBy('timestamp')
-                .onSnapshot(snapshot => {
-                    messagesContainer.innerHTML = '';
-                    snapshot.forEach(doc => {
-                        const msg = doc.data();
-                        const div = document.createElement('div');
-                        div.className = `message ${msg.sender === 'user' ? 'user' : 'other'}`;
-                        div.textContent = msg.text;
-                        messagesContainer.appendChild(div);
-                    });
-                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                });
+/* --------------------
+  CREER CONVERSATION PRIVE
+  -------------------- */
+addBtn.addEventListener('click', ()=> modalPrivate.style.display = 'flex');
+cancelPrivateBtn.addEventListener('click', ()=> {
+  modalPrivate.style.display = 'none';
+  privateContactInput.value = '';
+});
 
-            document.getElementById('send-message').onclick = sendAIMessage;
-            messageText.onkeypress = (e) => { if (e.key === 'Enter') sendAIMessage(); };
-        }
+createPrivateBtn.addEventListener('click', async ()=>{
+  const contact = privateContactInput.value.trim();
+  if(!contact) return alert('Indique un email ou numéro valide.');
+  const query = contact.includes('@') ? db.collection('users').where('email','==',contact) : db.collection('users').where('phoneNumber','==',contact);
+  const snap = await query.get();
+  if(snap.empty) return alert('Utilisateur non trouvé');
+  const otherId = snap.docs[0].id;
+  if(otherId === currentUser.uid) return alert("C'est vous !");
+  const existing = await db.collection('privateConversations').where('participants','array-contains', currentUser.uid).get();
+  let convId = null;
+  existing.forEach(d=> {
+    const p = d.data().participants;
+    if(p.includes(otherId) && p.length === 2) convId = d.id;
+  });
+  if(!convId){
+    const newDoc = await db.collection('privateConversations').add({
+      participants: [currentUser.uid, otherId],
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      lastMessage: ''
+    });
+    convId = newDoc.id;
+  }
+  modalPrivate.style.display = 'none';
+  privateContactInput.value = '';
+  selectConversation(convId, 'private', snap.docs[0].data().displayName || (snap.docs[0].data().email || '').split('@')[0], otherId);
+  if(window.innerWidth <= 780) document.body.classList.add('show-chat');
+});
 
-        function sendAIMessage() {
-            const text = messageText.value.trim();
-            if (!text) return;
-            const ref = db.collection('aiChats').doc(currentUser.uid).collection('messages');
-            
-            ref.add({ text, sender: 'user', timestamp: firebase.firestore.FieldValue.serverTimestamp() }).then(() => {
-                const response = generateAIResponse(text);
-                setTimeout(() => {
-                    ref.add({ text: response, sender: 'ai', timestamp: firebase.firestore.FieldValue.serverTimestamp() });
-                }, 500); // Petit délai pour simuler la réflexion
-            });
-            messageText.value = '';
-        }
+/* SEND button */
+sendBtn.addEventListener('click', sendMessage);
+messageInput.addEventListener('keypress', (e)=> { if(e.key === 'Enter') sendMessage(); });
 
-        function generateAIResponse(input) {
-            input = input.trim().toLowerCase();
-            if (/^(\d+)\s*([\+\-\*\/])\s*(\d+)$/.test(input)) {
-                return "Le résultat est calculé ! (Fonctionnalité mathématique basique)";
-            }
-            if (input.includes('nom') || input.includes('qui')) return "Je suis CHARLES, l'IA de CHARTECH !";
-            return "Message reçu. Je suis en phase de test pour le moment !";
-        }
-    </script>
+/* --------------------
+  NOTIFICATIONS LOCALES + SON + VIBRATION
+  -------------------- */
+function requestNotificationPermission(){
+  if(!("Notification" in window)) return;
+  if(Notification.permission === "default") Notification.requestPermission().then(p=>{});
+}
+
+function showNotification(title, body){
+  showToast(title + ": " + body);
+  if(Notification.permission === "granted"){
+    const n = new Notification(title, { body, icon: null });
+    n.onclick = ()=> window.focus();
+  }
+  try{ notifySound.currentTime = 0; notifySound.play().catch(()=>{}); } catch(e){}
+  if(navigator.vibrate) navigator.vibrate(200);
+}
+
+function showToast(text){
+  const t = document.createElement('div');
+  t.style.position = 'fixed';
+  t.style.right = '12px';
+  t.style.bottom = '12px';
+  t.style.background = 'rgba(0,0,0,0.7)';
+  t.style.color = '#fff';
+  t.style.padding = '10px 14px';
+  t.style.borderRadius = '10px';
+  t.style.boxShadow = '0 6px 20px rgba(0,0,0,0.4)';
+  t.textContent = text;
+  document.body.appendChild(t);
+  setTimeout(()=> t.style.opacity = 0.0, 2500);
+  setTimeout(()=> t.remove(), 3200);
+}
+
+/* --------------------
+  IA CHARLES (simple demo)
+  -------------------- */
+function startAIChat(){
+  chatTitle.textContent = 'Discussion avec CHARLES';
+  inputArea.style.display = 'flex';
+  if(convMessagesUnsub) convMessagesUnsub();
+  const ref = db.collection('aiChats').doc(currentUser.uid).collection('messages').orderBy('timestamp');
+  convMessagesUnsub = ref.onSnapshot(snapshot=>{
+    messagesEl.innerHTML = '';
+    snapshot.forEach(doc=>{
+      const msg = doc.data();
+      const d = document.createElement('div');
+      d.className = 'message ' + (msg.sender === 'user' ? 'user' : 'other');
+      d.textContent = msg.text;
+      messagesEl.appendChild(d);
+    });
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  });
+
+  sendBtn.onclick = async ()=>{
+    const text = messageInput.value.trim();
+    if(!text) return;
+    const ref = db.collection('aiChats').doc(currentUser.uid).collection('messages');
+    await ref.add({ text, sender: 'user', timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+    messageInput.value = '';
+    const resp = generateAIResponse(text);
+    setTimeout(()=> ref.add({ text:resp, sender:'ai', timestamp: firebase.firestore.FieldValue.serverTimestamp() }), 500);
+  };
+}
+
+function generateAIResponse(input){
+  const t = input.trim().toLowerCase();
+  if(/^\d+\s*[\+\-\*\/]\s*\d+$/.test(t)){
+    try{ return String(eval(t)); }catch(e){ return "Erreur calcul"; }
+  }
+  if(t.includes('qui es') || t.includes('ton nom')) return "Je suis CHARLES, l'IA de CHARTECH.";
+  return "Message reçu — je suis en phase de test.";
+}
+
+/* --------------------
+  NAV TAB SWITCH
+  -------------------- */
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    currentTab = tab.dataset.tab;
+    if(convMessagesUnsub) convMessagesUnsub();
+    sendBtn.onclick = sendMessage;
+    if(currentTab === 'settings'){
+      chatTitle.textContent = 'Paramètres';
+      inputArea.style.display = 'none';
+      messagesEl.innerHTML = `<div style="padding:20px;color:var(--muted)">Paramètres (à implémenter)</div>`;
+    } else if(currentTab === 'ai'){
+      startAIChat();
+    } else {
+      loadConversations(currentTab);
+      chatTitle.textContent = 'Sélectionnez une conversation';
+      messagesEl.innerHTML = '';
+      inputArea.style.display = 'none';
+    }
+  });
+});
+
+/* --------------------
+  LOGOUT
+  -------------------- */
+document.getElementById('logout').addEventListener('click', ()=>{
+  if(currentUser){
+    rdb.ref('/status/' + currentUser.uid).set({ state:'offline', last_changed: firebase.database.ServerValue.TIMESTAMP });
+  }
+  auth.signOut();
+});
+
+/* --------------------
+  UTILS
+  -------------------- */
+function timeAgo(ts){
+  const d = new Date(ts);
+  const s = Math.floor((Date.now() - d.getTime())/1000);
+  if(s < 60) return `${s}s`;
+  if(s < 3600) return `${Math.floor(s/60)}m`;
+  if(s < 86400) return `${Math.floor(s/3600)}h`;
+  return `${Math.floor(s/86400)}j`;
+}
+</script>
 </body>
 </html>
-

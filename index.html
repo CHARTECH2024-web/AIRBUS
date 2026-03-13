@@ -2,13 +2,11 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CHARLES - Messagerie</title>
-    <!-- Firebase SDK (compat) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CHARLES</title>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* Variables de thème - thème 1 (Bleu néon) par défaut */
@@ -91,19 +89,26 @@
             justify-content: center;
             align-items: center;
             transition: background-color 0.3s, color 0.3s;
+            overflow: hidden; /* Empêche le scroll global sur mobile */
         }
 
         #app {
             width: 100%;
             max-width: 1200px;
-            height: 90vh;
+            height: 100vh; /* 100vh pour mobile, réduit pour desktop plus bas */
             background: var(--bg-secondary);
-            border-radius: 20px;
             box-shadow: var(--shadow);
-            overflow: hidden;
             display: flex;
             flex-direction: column;
             position: relative;
+        }
+
+        @media (min-width: 769px) {
+            #app {
+                height: 90vh;
+                border-radius: 20px;
+                overflow: hidden;
+            }
         }
 
         /* Écran de connexion */
@@ -141,7 +146,8 @@
         .auth-form {
             display: flex;
             flex-direction: column;
-            width: 300px;
+            width: 100%;
+            max-width: 300px;
             gap: 15px;
         }
 
@@ -165,10 +171,6 @@
             transition: 0.2s;
         }
 
-        .auth-form button:hover {
-            transform: scale(1.02);
-        }
-
         /* Interface principale */
         #main-screen {
             display: flex;
@@ -182,21 +184,28 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px 20px;
+            padding: 15px;
             border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .nav-tabs {
             display: flex;
-            gap: 20px;
+            gap: 10px;
+            overflow-x: auto;
+            scrollbar-width: none; /* Firefox */
         }
+        .nav-tabs::-webkit-scrollbar { display: none; } /* Chrome */
 
         .nav-tab {
-            padding: 8px 16px;
+            padding: 8px 12px;
             cursor: pointer;
             border-radius: 20px;
             transition: 0.3s;
             font-weight: 500;
+            white-space: nowrap;
+            font-size: 0.9rem;
         }
 
         .nav-tab.active {
@@ -209,6 +218,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            font-size: 0.9rem;
         }
 
         .user-info button {
@@ -225,15 +235,18 @@
             flex: 1;
             display: flex;
             overflow: hidden;
+            position: relative;
         }
 
         /* Liste des conversations */
         .conversation-list {
             width: 300px;
             border-right: 1px solid var(--border);
-            overflow-y: auto;
             display: flex;
             flex-direction: column;
+            height: 100%;
+            background: var(--bg-secondary);
+            z-index: 10;
         }
 
         .list-header {
@@ -249,14 +262,15 @@
             background: transparent;
             border: 1px solid var(--accent);
             color: var(--accent);
-            width: 30px;
-            height: 30px;
+            width: 35px;
+            height: 35px;
             border-radius: 50%;
             cursor: pointer;
-            font-size: 18px;
+            font-size: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: 0.3s;
         }
 
         .add-btn:hover {
@@ -274,6 +288,9 @@
             border-bottom: 1px solid var(--border);
             cursor: pointer;
             transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .conversation-item:hover {
@@ -290,12 +307,26 @@
             flex: 1;
             display: flex;
             flex-direction: column;
+            background: var(--bg-secondary);
+            height: 100%;
         }
 
         .chat-header {
             padding: 15px;
             border-bottom: 1px solid var(--border);
             font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .back-btn {
+            display: none;
+            background: transparent;
+            border: none;
+            color: var(--accent);
+            font-size: 1.2rem;
+            cursor: pointer;
         }
 
         .messages {
@@ -305,25 +336,29 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+            scroll-behavior: smooth;
         }
 
         .message {
-            max-width: 70%;
+            max-width: 80%;
             padding: 10px 15px;
             border-radius: 18px;
             word-wrap: break-word;
+            line-height: 1.4;
         }
 
         .message.user {
             align-self: flex-end;
             background: var(--message-user);
             color: white;
+            border-bottom-right-radius: 5px;
         }
 
         .message.other {
             align-self: flex-start;
             background: var(--message-other);
             color: var(--text-primary);
+            border-bottom-left-radius: 5px;
         }
 
         .message-input {
@@ -331,29 +366,65 @@
             padding: 15px;
             gap: 10px;
             border-top: 1px solid var(--border);
+            background: var(--bg-secondary);
         }
 
         .message-input input {
             flex: 1;
-            padding: 12px;
+            padding: 12px 20px;
             border-radius: 25px;
             border: 1px solid var(--border);
             background: var(--bg-primary);
             color: var(--text-primary);
+            font-size: 1rem;
+        }
+        
+        .message-input input:focus {
+            outline: none;
+            border-color: var(--accent);
         }
 
         .message-input button {
-            width: 50px;
-            height: 50px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
             border: none;
             background: var(--accent);
             color: var(--bg-primary);
             cursor: pointer;
             box-shadow: var(--accent-glow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        /* Écran des paramètres */
+        /* RESPONSIVE DESIGN MOBILE */
+        @media (max-width: 768px) {
+            .conversation-list {
+                width: 100%;
+                border-right: none;
+            }
+            .chat-area {
+                display: none; /* Caché par défaut sur mobile */
+                width: 100%;
+                position: absolute;
+                top: 0;
+                left: 0;
+                z-index: 20;
+            }
+            .back-btn {
+                display: block; /* Affiche le bouton retour sur mobile */
+            }
+            .user-info span {
+                display: none; /* Cache l'email sur mobile pour gagner de la place */
+            }
+            
+            /* Classes pour gérer l'affichage mobile via JS */
+            .show-chat .conversation-list { display: none; }
+            .show-chat .chat-area { display: flex; }
+        }
+
+        /* Paramètres et Modals (inchangés visuellement mais ajustés) */
         #settings-screen {
             flex: 1;
             padding: 20px;
@@ -361,137 +432,32 @@
             display: none;
         }
 
-        .settings-section {
-            margin-bottom: 30px;
-        }
+        .settings-section { margin-bottom: 30px; }
+        .settings-title { font-size: 1.2rem; margin-bottom: 15px; color: var(--accent); }
+        .theme-buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+        .theme-btn { padding: 10px 20px; border: 1px solid var(--border); background: var(--bg-primary); color: var(--text-primary); cursor: pointer; border-radius: 5px; }
+        .theme-btn:hover { border-color: var(--accent); }
+        .language-select { padding: 10px; background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border); border-radius: 5px; }
+        .support-btn { display: inline-block; padding: 12px 24px; background: var(--accent); color: var(--bg-primary); text-decoration: none; border-radius: 8px; font-weight: bold; }
 
-        .settings-title {
-            font-size: 1.2rem;
-            margin-bottom: 15px;
-            color: var(--accent);
-        }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal.hidden { display: none; }
+        .modal-content { background: var(--bg-secondary); padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; border: 1px solid var(--accent); box-shadow: var(--shadow); }
+        .modal-content h3 { margin-bottom: 15px; color: var(--accent); }
+        .modal-content input, .modal-content textarea { width: 100%; padding: 12px; margin-bottom: 10px; background: var(--bg-primary); border: 1px solid var(--border); color: var(--text-primary); border-radius: 5px; }
+        .modal-content textarea { min-height: 80px; resize: vertical; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; }
+        .modal-actions button { padding: 10px 16px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .modal-actions .cancel { background: transparent; border: 1px solid var(--border); color: var(--text-primary); }
+        .modal-actions .confirm { background: var(--accent); color: var(--bg-primary); }
 
-        .theme-buttons {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .theme-btn {
-            padding: 10px 20px;
-            border: 1px solid var(--border);
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            cursor: pointer;
-            border-radius: 5px;
-        }
-
-        .theme-btn:hover {
-            border-color: var(--accent);
-        }
-
-        .language-select {
-            padding: 10px;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            border: 1px solid var(--border);
-            border-radius: 5px;
-        }
-
-        .support-btn {
-            display: inline-block;
-            padding: 12px 24px;
-            background: var(--accent);
-            color: var(--bg-primary);
-            text-decoration: none;
-            border-radius: 8px;
-            font-weight: bold;
-            box-shadow: var(--accent-glow);
-        }
-
-        /* Modals */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-
-        .modal.hidden {
-            display: none;
-        }
-
-        .modal-content {
-            background: var(--bg-secondary);
-            padding: 20px;
-            border-radius: 10px;
-            width: 90%;
-            max-width: 400px;
-            border: 1px solid var(--border);
-        }
-
-        .modal-content h3 {
-            margin-bottom: 15px;
-            color: var(--accent);
-        }
-
-        .modal-content input, .modal-content textarea {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            color: var(--text-primary);
-            border-radius: 5px;
-        }
-
-        .modal-content textarea {
-            min-height: 80px;
-            resize: vertical;
-        }
-
-        .modal-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .modal-actions button {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .modal-actions .cancel {
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-primary);
-        }
-
-        .modal-actions .confirm {
-            background: var(--accent);
-            color: var(--bg-primary);
-        }
-
-        /* Bip sonore */
-        #beep {
-            display: none;
-        }
+        #beep { display: none; }
     </style>
 </head>
 <body>
     <div id="app">
-        <!-- Écran de connexion -->
         <div id="auth-screen">
-            <h1 style="margin-bottom: 30px; color: var(--accent);">CHARLES</h1>
+            <h1 style="margin-bottom: 30px; color: var(--accent); font-size: 2.5rem; letter-spacing: 2px;">CHARLES</h1>
             <div class="auth-tabs">
                 <div class="auth-tab active" data-auth="email">Email</div>
                 <div class="auth-tab" data-auth="phone">Téléphone</div>
@@ -503,15 +469,14 @@
                 <button id="signup-btn">S'inscrire</button>
             </div>
             <div id="phone-auth" class="auth-form" style="display: none;">
-                <input type="tel" id="phone" placeholder="Numéro de téléphone" required>
-                <div id="recaptcha-container"></div>
+                <input type="tel" id="phone" placeholder="Numéro (ex: +243...)" required>
+                <div id="recaptcha-container" style="margin: 10px 0;"></div>
                 <button id="phone-login-btn">Envoyer le code</button>
                 <input type="text" id="verification-code" placeholder="Code de vérification" style="display: none;">
                 <button id="verify-code-btn" style="display: none;">Vérifier</button>
             </div>
         </div>
 
-        <!-- Interface principale -->
         <div id="main-screen">
             <div class="navbar">
                 <div class="nav-tabs">
@@ -522,40 +487,41 @@
                 </div>
                 <div class="user-info">
                     <span id="user-display"></span>
-                    <button id="logout-btn">Déconnexion</button>
+                    <button id="logout-btn"><i class="fas fa-sign-out-alt"></i></button>
                 </div>
             </div>
-            <div class="content">
-                <!-- Liste des conversations (pour privé et groupe) -->
+            
+            <div class="content" id="main-content">
                 <div id="conversation-list" class="conversation-list">
                     <div class="list-header">
                         <span id="list-header">Conversations</span>
-                        <button id="add-conversation-btn" class="add-btn">+</button>
+                        <button id="add-conversation-btn" class="add-btn"><i class="fas fa-plus"></i></button>
                     </div>
                     <div id="conversations-container"></div>
                 </div>
 
-                <!-- Zone de chat -->
-                <div class="chat-area">
-                    <div class="chat-header" id="chat-header">Sélectionnez une conversation</div>
+                <div class="chat-area" id="chat-area">
+                    <div class="chat-header">
+                        <button class="back-btn" id="back-to-list"><i class="fas fa-arrow-left"></i></button>
+                        <span id="chat-header-title">Sélectionnez une conversation</span>
+                    </div>
                     <div class="messages" id="messages-container"></div>
                     <div class="message-input" id="message-input-area" style="display: none;">
-                        <input type="text" id="message-text" placeholder="Votre message...">
+                        <input type="text" id="message-text" placeholder="Votre message..." autocomplete="off">
                         <button id="send-message"><i class="fas fa-paper-plane"></i></button>
                     </div>
                 </div>
             </div>
 
-            <!-- Écran des paramètres (caché par défaut) -->
             <div id="settings-screen">
                 <div class="settings-section">
                     <div class="settings-title">Thème</div>
                     <div class="theme-buttons">
                         <button class="theme-btn" data-theme="1">Bleu néon</button>
-                        <button class="theme-btn" data-theme="2">Noir et or</button>
-                        <button class="theme-btn" data-theme="3">Rouge et orange</button>
-                        <button class="theme-btn" data-theme="4">Vert</button>
-                        <button class="theme-btn" data-theme="5">Blanc et or</button>
+                        <button class="theme-btn" data-theme="2">Noir & Or</button>
+                        <button class="theme-btn" data-theme="3">Rouge & Orange</button>
+                        <button class="theme-btn" data-theme="4">Vert Hacker</button>
+                        <button class="theme-btn" data-theme="5">Blanc & Or</button>
                     </div>
                 </div>
                 <div class="settings-section">
@@ -566,21 +532,20 @@
                     </select>
                 </div>
                 <div class="settings-section">
-                    <div class="settings-title">Soutenir</div>
-                    <p>Orange Money : 0892959679</p>
-                    <a href="#" class="support-btn" id="copy-support">Copier le numéro</a>
+                    <div class="settings-title">Soutenir CHARTECH</div>
+                    <p style="margin-bottom: 10px;">Orange Money : <strong>0892959679</strong></p>
+                    <a href="#" class="support-btn" id="copy-support"><i class="fas fa-copy"></i> Copier le numéro</a>
                 </div>
             </div>
         </div>
 
-        <!-- Modals pour création de conversation -->
         <div id="new-private-modal" class="modal hidden">
             <div class="modal-content">
-                <h3 id="modal-private-title">Nouvelle conversation privée</h3>
+                <h3 id="modal-private-title">Nouvelle conversation</h3>
                 <input type="text" id="private-contact" placeholder="Email ou téléphone du destinataire">
                 <div class="modal-actions">
                     <button class="cancel" id="cancel-private">Annuler</button>
-                    <button class="confirm" id="create-private">Créer</button>
+                    <button class="confirm" id="create-private">Démarrer</button>
                 </div>
             </div>
         </div>
@@ -592,17 +557,16 @@
                 <textarea id="group-members" placeholder="Emails ou téléphones des participants (séparés par des virgules)"></textarea>
                 <div class="modal-actions">
                     <button class="cancel" id="cancel-group">Annuler</button>
-                    <button class="confirm" id="create-group">Créer</button>
+                    <button class="confirm" id="create-group">Créer le groupe</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Audio pour le bip -->
     <audio id="beep" src="data:audio/wav;base64,UklGRlwAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YVAAAAA8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"></audio>
 
     <script>
-        // Configuration Firebase
+        // --- 1. CONFIGURATION FIREBASE ---
         const firebaseConfig = {
             apiKey: "AIzaSyBp2RhutYDFnqglXQrZaq4KJZpDJH1fmDk",
             authDomain: "boeing-777-d5b8b.firebaseapp.com",
@@ -613,637 +577,345 @@
             measurementId: "G-D7ZC4XYSKK"
         };
 
-        // Initialiser Firebase
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
 
-        // Éléments DOM
-        const authScreen = document.getElementById('auth-screen');
-        const mainScreen = document.getElementById('main-screen');
-        const emailAuthDiv = document.getElementById('email-auth');
-        const phoneAuthDiv = document.getElementById('phone-auth');
-        const authTabs = document.querySelectorAll('.auth-tab');
-        const loginBtn = document.getElementById('login-btn');
-        const signupBtn = document.getElementById('signup-btn');
-        const phoneLoginBtn = document.getElementById('phone-login-btn');
-        const verifyCodeBtn = document.getElementById('verify-code-btn');
-        const phoneInput = document.getElementById('phone');
-        const verificationCodeInput = document.getElementById('verification-code');
-        const recaptchaContainer = document.getElementById('recaptcha-container');
-        const logoutBtn = document.getElementById('logout-btn');
-        const userDisplay = document.getElementById('user-display');
-        const navTabs = document.querySelectorAll('.nav-tab');
-        const conversationListDiv = document.getElementById('conversation-list');
-        const conversationsContainer = document.getElementById('conversations-container');
-        const chatHeader = document.getElementById('chat-header');
-        const messagesContainer = document.getElementById('messages-container');
-        const messageInputArea = document.getElementById('message-input-area');
-        const messageText = document.getElementById('message-text');
-        const sendBtn = document.getElementById('send-message');
-        const settingsScreen = document.getElementById('settings-screen');
-        const themeBtns = document.querySelectorAll('.theme-btn');
-        const languageSelect = document.getElementById('language-select');
-        const copySupportBtn = document.getElementById('copy-support');
-        const addConversationBtn = document.getElementById('add-conversation-btn');
-        const newPrivateModal = document.getElementById('new-private-modal');
-        const newGroupModal = document.getElementById('new-group-modal');
-        const cancelPrivate = document.getElementById('cancel-private');
-        const createPrivate = document.getElementById('create-private');
-        const cancelGroup = document.getElementById('cancel-group');
-        const createGroup = document.getElementById('create-group');
-        const privateContact = document.getElementById('private-contact');
-        const groupName = document.getElementById('group-name');
-        const groupMembers = document.getElementById('group-members');
-
-        // Variables globales
+        // --- 2. VARIABLES ET ELEMENTS DOM ---
         let currentUser = null;
-        let currentTab = 'private'; // private, group, ai
+        let currentTab = 'private';
         let currentConversationId = null;
         let currentConversationType = null;
         let unsubscribeMessages = null;
         let conversationsListener = null;
-        let recaptchaVerifier = null;
-        let confirmationResult = null;
-        let appVerifier = null;
 
-        // Traductions
+        const mainContent = document.getElementById('main-content');
+        const backToListBtn = document.getElementById('back-to-list');
+        const chatHeaderTitle = document.getElementById('chat-header-title');
+        const messagesContainer = document.getElementById('messages-container');
+        const messageInputArea = document.getElementById('message-input-area');
+        const messageText = document.getElementById('message-text');
+
+        // --- 3. GESTION DU RESPONSIVE (MOBILE) ---
+        backToListBtn.addEventListener('click', () => {
+            mainContent.classList.remove('show-chat');
+            currentConversationId = null;
+        });
+
+        function openMobileChat() {
+            if (window.innerWidth <= 768) {
+                mainContent.classList.add('show-chat');
+            }
+        }
+
+        // --- 4. TRADUCTIONS ET THEMES ---
         const translations = {
             fr: {
                 conversations: 'Conversations',
                 selectChat: 'Sélectionnez une conversation',
-                private: 'Privé',
-                group: 'Groupe',
-                ai: 'IA Charles',
-                settings: 'Paramètres',
-                logout: 'Déconnexion',
                 messagePlaceholder: 'Votre message...',
-                support: 'Soutenir',
-                copy: 'Copier le numéro',
-                theme: 'Thème',
-                language: 'Langue',
-                newPrivate: 'Nouvelle conversation privée',
+                newPrivate: 'Nouvelle conversation',
                 newGroup: 'Nouveau groupe',
-                contactPlaceholder: 'Email ou téléphone du destinataire',
-                groupNamePlaceholder: 'Nom du groupe',
-                groupMembersPlaceholder: 'Emails ou téléphones des participants (séparés par des virgules)',
-                cancel: 'Annuler',
-                create: 'Créer',
-                userNotFound: 'Utilisateur non trouvé',
-                groupCreated: 'Groupe créé',
-                conversationCreated: 'Conversation créée'
+                copy: 'Numéro copié !'
             },
             en: {
-                conversations: 'Conversations',
-                selectChat: 'Select a conversation',
-                private: 'Private',
-                group: 'Group',
-                ai: 'AI Charles',
-                settings: 'Settings',
-                logout: 'Logout',
-                messagePlaceholder: 'Your message...',
-                support: 'Support',
-                copy: 'Copy number',
-                theme: 'Theme',
-                language: 'Language',
-                newPrivate: 'New private conversation',
-                newGroup: 'New group',
-                contactPlaceholder: 'Recipient email or phone',
-                groupNamePlaceholder: 'Group name',
-                groupMembersPlaceholder: 'Participants emails or phones (comma separated)',
-                cancel: 'Cancel',
-                create: 'Create',
-                userNotFound: 'User not found',
-                groupCreated: 'Group created',
-                conversationCreated: 'Conversation created'
+                conversations: 'Chats',
+                selectChat: 'Select a chat',
+                messagePlaceholder: 'Type a message...',
+                newPrivate: 'New Chat',
+                newGroup: 'New Group',
+                copy: 'Number copied!'
             }
         };
+
         let currentLang = 'fr';
+        document.getElementById('language-select').addEventListener('change', (e) => {
+            currentLang = e.target.value;
+            document.getElementById('list-header').innerText = translations[currentLang].conversations;
+            messageText.placeholder = translations[currentLang].messagePlaceholder;
+        });
 
-        // Fonction pour appliquer la langue
-        function applyLanguage(lang) {
-            currentLang = lang;
-            document.getElementById('list-header').innerText = translations[lang].conversations;
-            chatHeader.innerText = translations[lang].selectChat;
-            messageText.placeholder = translations[lang].messagePlaceholder;
-            document.getElementById('modal-private-title').innerText = translations[lang].newPrivate;
-            document.getElementById('modal-group-title').innerText = translations[lang].newGroup;
-            privateContact.placeholder = translations[lang].contactPlaceholder;
-            groupName.placeholder = translations[lang].groupNamePlaceholder;
-            groupMembers.placeholder = translations[lang].groupMembersPlaceholder;
-            cancelPrivate.innerText = translations[lang].cancel;
-            createPrivate.innerText = translations[lang].create;
-            cancelGroup.innerText = translations[lang].cancel;
-            createGroup.innerText = translations[lang].create;
-        }
-
-        // Fonction pour jouer un bip
-        function playBeep() {
-            const audio = document.getElementById('beep');
-            audio.play().catch(e => console.log('Audio pas supporté'));
-        }
-
-        // Fonction pour changer de thème
-        function setTheme(themeNumber) {
-            document.body.className = `theme${themeNumber}`;
-            localStorage.setItem('theme', themeNumber);
-        }
-
-        // Charger le thème sauvegardé
         const savedTheme = localStorage.getItem('theme') || '1';
-        setTheme(savedTheme);
-
-        themeBtns.forEach(btn => {
+        document.body.className = `theme${savedTheme}`;
+        document.querySelectorAll('.theme-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                const theme = btn.dataset.theme;
-                setTheme(theme);
+                document.body.className = `theme${btn.dataset.theme}`;
+                localStorage.setItem('theme', btn.dataset.theme);
             });
         });
 
-        // Copier le numéro de support
-        copySupportBtn.addEventListener('click', (e) => {
+        document.getElementById('copy-support').addEventListener('click', (e) => {
             e.preventDefault();
-            navigator.clipboard.writeText('0892959679').then(() => {
-                alert(translations[currentLang].copy + ' !');
-            });
+            navigator.clipboard.writeText('0892959679').then(() => alert(translations[currentLang].copy));
         });
 
-        // Gestion des onglets d'authentification
-        authTabs.forEach(tab => {
+        // --- 5. AUTHENTIFICATION ---
+        // Gestion des onglets Login
+        document.querySelectorAll('.auth-tab').forEach(tab => {
             tab.addEventListener('click', () => {
-                authTabs.forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
-                const type = tab.dataset.auth;
-                if (type === 'email') {
-                    emailAuthDiv.style.display = 'flex';
-                    phoneAuthDiv.style.display = 'none';
+                if (tab.dataset.auth === 'email') {
+                    document.getElementById('email-auth').style.display = 'flex';
+                    document.getElementById('phone-auth').style.display = 'none';
                 } else {
-                    emailAuthDiv.style.display = 'none';
-                    phoneAuthDiv.style.display = 'flex';
+                    document.getElementById('email-auth').style.display = 'none';
+                    document.getElementById('phone-auth').style.display = 'flex';
                 }
             });
         });
 
-        // Inscription par email
-        signupBtn.addEventListener('click', () => {
+        // Email Login / Signup
+        document.getElementById('signup-btn').addEventListener('click', () => {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             auth.createUserWithEmailAndPassword(email, password)
-                .then(userCredential => {
-                    // Créer un document utilisateur
-                    return db.collection('users').doc(userCredential.user.uid).set({
-                        email: email,
-                        displayName: email.split('@')[0],
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                })
-                .catch(error => alert(error.message));
+                .then(cred => db.collection('users').doc(cred.user.uid).set({ email, displayName: email.split('@')[0] }))
+                .catch(err => alert(err.message));
         });
 
-        // Connexion par email
-        loginBtn.addEventListener('click', () => {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            auth.signInWithEmailAndPassword(email, password)
-                .catch(error => alert(error.message));
+        document.getElementById('login-btn').addEventListener('click', () => {
+            auth.signInWithEmailAndPassword(document.getElementById('email').value, document.getElementById('password').value)
+                .catch(err => alert("Erreur : " + err.message));
         });
 
-        // Connexion par téléphone
-        phoneLoginBtn.addEventListener('click', () => {
-            const phoneNumber = phoneInput.value;
-            if (!appVerifier) {
-                appVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-                    size: 'normal'
-                });
-            }
-            auth.signInWithPhoneNumber(phoneNumber, appVerifier)
-                .then(confirmation => {
-                    confirmationResult = confirmation;
-                    phoneLoginBtn.style.display = 'none';
-                    verificationCodeInput.style.display = 'block';
-                    verifyCodeBtn.style.display = 'block';
-                })
-                .catch(error => alert(error.message));
+        // Phone Login
+        let appVerifier, confirmationResult;
+        document.getElementById('phone-login-btn').addEventListener('click', () => {
+            if (!appVerifier) appVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', { size: 'normal' });
+            auth.signInWithPhoneNumber(document.getElementById('phone').value, appVerifier)
+                .then(conf => {
+                    confirmationResult = conf;
+                    document.getElementById('phone-login-btn').style.display = 'none';
+                    document.getElementById('verification-code').style.display = 'block';
+                    document.getElementById('verify-code-btn').style.display = 'block';
+                }).catch(err => alert(err.message));
         });
 
-        verifyCodeBtn.addEventListener('click', () => {
-            const code = verificationCodeInput.value;
-            confirmationResult.confirm(code).then(result => {
-                // Utilisateur connecté
-            }).catch(error => alert(error.message));
+        document.getElementById('verify-code-btn').addEventListener('click', () => {
+            confirmationResult.confirm(document.getElementById('verification-code').value).catch(err => alert(err.message));
         });
 
-        // Déconnexion
-        logoutBtn.addEventListener('click', () => {
-            auth.signOut();
-        });
+        document.getElementById('logout-btn').addEventListener('click', () => auth.signOut());
 
-        // Gestion de l'état d'authentification
+        // Surveiller l'état de connexion
         auth.onAuthStateChanged(async user => {
             if (user) {
                 currentUser = user;
-                authScreen.style.display = 'none';
-                mainScreen.style.display = 'flex';
-                userDisplay.textContent = user.email || user.phoneNumber;
-
-                // S'assurer que l'utilisateur a un document
+                document.getElementById('auth-screen').style.display = 'none';
+                document.getElementById('main-screen').style.display = 'flex';
+                document.getElementById('user-display').textContent = user.email || user.phoneNumber;
+                
+                // S'assurer que le user existe en base
                 const userDoc = await db.collection('users').doc(user.uid).get();
                 if (!userDoc.exists) {
                     await db.collection('users').doc(user.uid).set({
-                        email: user.email || '',
-                        phoneNumber: user.phoneNumber || '',
-                        displayName: user.email ? user.email.split('@')[0] : user.phoneNumber,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        email: user.email || '', phoneNumber: user.phoneNumber || '',
+                        displayName: user.email ? user.email.split('@')[0] : user.phoneNumber
                     });
                 }
-
-                // Charger les conversations privées
                 loadConversations('private');
             } else {
                 currentUser = null;
-                authScreen.style.display = 'flex';
-                mainScreen.style.display = 'none';
+                document.getElementById('auth-screen').style.display = 'flex';
+                document.getElementById('main-screen').style.display = 'none';
                 if (unsubscribeMessages) unsubscribeMessages();
                 if (conversationsListener) conversationsListener();
             }
         });
 
-        // Navigation entre onglets
-        navTabs.forEach(tab => {
+        // --- 6. NAVIGATION PRINCIPALE ---
+        document.querySelectorAll('.nav-tab').forEach(tab => {
             tab.addEventListener('click', () => {
-                navTabs.forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
-                const tabName = tab.dataset.tab;
-                currentTab = tabName;
+                currentTab = tab.dataset.tab;
+                mainContent.classList.remove('show-chat'); // Retour à la liste sur mobile
 
-                // Afficher/masquer la liste des conversations selon l'onglet
-                if (tabName === 'settings') {
-                    conversationListDiv.style.display = 'none';
-                    settingsScreen.style.display = 'block';
-                    document.querySelector('.chat-area').style.display = 'none';
+                if (currentTab === 'settings') {
+                    document.getElementById('conversation-list').style.display = 'none';
+                    document.getElementById('chat-area').style.display = 'none';
+                    document.getElementById('settings-screen').style.display = 'block';
                 } else {
-                    conversationListDiv.style.display = 'flex';
-                    settingsScreen.style.display = 'none';
-                    document.querySelector('.chat-area').style.display = 'flex';
-                    if (tabName === 'ai') {
-                        // Pour l'IA, on cache la liste des conversations et on affiche directement le chat avec l'IA
-                        conversationListDiv.style.display = 'none';
+                    document.getElementById('settings-screen').style.display = 'none';
+                    document.getElementById('conversation-list').style.display = 'flex';
+                    document.getElementById('chat-area').style.display = 'flex';
+                    
+                    if (currentTab === 'ai') {
+                        document.getElementById('conversation-list').style.display = 'none';
+                        openMobileChat();
                         startAIChat();
                     } else {
-                        conversationListDiv.style.display = 'flex';
-                        loadConversations(tabName);
+                        loadConversations(currentTab);
                     }
                 }
             });
         });
 
-        // Bouton + pour ajouter une conversation
-        addConversationBtn.addEventListener('click', () => {
-            if (currentTab === 'private') {
-                newPrivateModal.classList.remove('hidden');
-            } else if (currentTab === 'group') {
-                newGroupModal.classList.remove('hidden');
-            }
-        });
-
-        // Annuler modal privé
-        cancelPrivate.addEventListener('click', () => {
-            newPrivateModal.classList.add('hidden');
-            privateContact.value = '';
-        });
-
-        // Créer conversation privée
-        createPrivate.addEventListener('click', async () => {
-            const contact = privateContact.value.trim();
-            if (!contact) return;
-
-            // Chercher l'utilisateur par email ou téléphone
-            let userQuery;
-            if (contact.includes('@')) {
-                userQuery = db.collection('users').where('email', '==', contact);
-            } else {
-                userQuery = db.collection('users').where('phoneNumber', '==', contact);
-            }
-
-            const snapshot = await userQuery.get();
-            if (snapshot.empty) {
-                alert(translations[currentLang].userNotFound);
-                return;
-            }
-
-            const otherUserId = snapshot.docs[0].id;
-            if (otherUserId === currentUser.uid) {
-                alert("Vous ne pouvez pas discuter avec vous-même");
-                return;
-            }
-
-            // Vérifier si une conversation existe déjà entre les deux
-            const existingConv = await db.collection('privateConversations')
-                .where('participants', 'array-contains', currentUser.uid)
-                .get();
-
-            let conversationId = null;
-            existingConv.forEach(doc => {
-                const data = doc.data();
-                if (data.participants.includes(otherUserId) && data.participants.length === 2) {
-                    conversationId = doc.id;
-                }
-            });
-
-            if (!conversationId) {
-                // Créer une nouvelle conversation
-                const newConv = await db.collection('privateConversations').add({
-                    participants: [currentUser.uid, otherUserId],
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                conversationId = newConv.id;
-            }
-
-            // Fermer le modal
-            newPrivateModal.classList.add('hidden');
-            privateContact.value = '';
-
-            // Sélectionner cette conversation
-            const otherUserDoc = await db.collection('users').doc(otherUserId).get();
-            const displayName = otherUserDoc.data().displayName || contact;
-            selectConversation(conversationId, 'private', displayName);
-        });
-
-        // Annuler modal groupe
-        cancelGroup.addEventListener('click', () => {
-            newGroupModal.classList.add('hidden');
-            groupName.value = '';
-            groupMembers.value = '';
-        });
-
-        // Créer groupe
-        createGroup.addEventListener('click', async () => {
-            const name = groupName.value.trim();
-            const membersInput = groupMembers.value.trim();
-            if (!name || !membersInput) return;
-
-            const contacts = membersInput.split(',').map(s => s.trim()).filter(s => s);
-            const participantIds = [];
-
-            for (let contact of contacts) {
-                let userQuery;
-                if (contact.includes('@')) {
-                    userQuery = db.collection('users').where('email', '==', contact);
-                } else {
-                    userQuery = db.collection('users').where('phoneNumber', '==', contact);
-                }
-                const snapshot = await userQuery.get();
-                if (snapshot.empty) {
-                    alert(`Utilisateur ${contact} non trouvé`);
-                    return;
-                }
-                participantIds.push(snapshot.docs[0].id);
-            }
-
-            // Ajouter l'utilisateur courant s'il n'est pas déjà dans la liste
-            if (!participantIds.includes(currentUser.uid)) {
-                participantIds.push(currentUser.uid);
-            }
-
-            // Créer le groupe
-            const groupRef = await db.collection('groups').add({
-                name: name,
-                participants: participantIds,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-
-            newGroupModal.classList.add('hidden');
-            groupName.value = '';
-            groupMembers.value = '';
-
-            // Sélectionner le groupe
-            selectConversation(groupRef.id, 'group', name);
-        });
-
-        // Charger les conversations (privées ou groupes)
+        // --- 7. CHARGEMENT ET CREATION DES CONVERSATIONS ---
         function loadConversations(type) {
             if (conversationsListener) conversationsListener();
-            const container = conversationsContainer;
-            container.innerHTML = '';
+            const container = document.getElementById('conversations-container');
+            container.innerHTML = '<div style="padding:15px; text-align:center;"><i class="fas fa-spinner fa-spin"></i></div>';
 
-            if (type === 'private') {
-                conversationsListener = db.collection('privateConversations')
-                    .where('participants', 'array-contains', currentUser.uid)
-                    .onSnapshot(snapshot => {
-                        container.innerHTML = '';
-                        snapshot.forEach(doc => {
-                            const data = doc.data();
-                            const otherParticipant = data.participants.find(p => p !== currentUser.uid);
-                            if (!otherParticipant) return;
-                            // Récupérer le nom de l'autre utilisateur
-                            db.collection('users').doc(otherParticipant).get().then(userDoc => {
-                                if (userDoc.exists) {
-                                    const displayName = userDoc.data().displayName || otherParticipant;
-                                    const item = document.createElement('div');
-                                    item.className = 'conversation-item';
-                                    if (doc.id === currentConversationId && currentConversationType === 'private') item.classList.add('selected');
-                                    item.textContent = displayName;
-                                    item.dataset.id = doc.id;
-                                    item.dataset.type = 'private';
-                                    item.addEventListener('click', () => selectConversation(doc.id, 'private', displayName));
-                                    container.appendChild(item);
-                                }
-                            });
+            const collection = type === 'private' ? 'privateConversations' : 'groups';
+            
+            conversationsListener = db.collection(collection)
+                .where('participants', 'array-contains', currentUser.uid)
+                .onSnapshot(async snapshot => {
+                    container.innerHTML = '';
+                    if (snapshot.empty) {
+                        container.innerHTML = `<div class="conversation-item" style="color:var(--text-primary);opacity:0.6;">Aucune conversation. Cliquez sur +</div>`;
+                        return;
+                    }
+
+                    // On utilise un tableau pour garantir l'ordre et gérer l'asynchrone proprement
+                    for (let doc of snapshot.docs) {
+                        const data = doc.data();
+                        let title = 'Groupe sans nom';
+                        
+                        if (type === 'private') {
+                            const otherId = data.participants.find(p => p !== currentUser.uid);
+                            if (otherId) {
+                                const userDoc = await db.collection('users').doc(otherId).get();
+                                title = userDoc.exists && userDoc.data().displayName ? userDoc.data().displayName : otherId;
+                            }
+                        } else {
+                            title = data.name || title;
+                        }
+
+                        const item = document.createElement('div');
+                        item.className = 'conversation-item';
+                        item.innerHTML = `<div style="width:40px;height:40px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;color:var(--bg-primary);font-weight:bold;">${title.charAt(0).toUpperCase()}</div><div>${title}</div>`;
+                        
+                        item.addEventListener('click', () => {
+                            document.querySelectorAll('.conversation-item').forEach(i => i.classList.remove('selected'));
+                            item.classList.add('selected');
+                            selectConversation(doc.id, type, title);
                         });
-                        // Si aucune conversation, afficher un message
-                        if (snapshot.empty) {
-                            container.innerHTML = '<div class="conversation-item">Aucune conversation. Cliquez sur + pour en créer une.</div>';
-                        }
-                    });
-            } else if (type === 'group') {
-                conversationsListener = db.collection('groups')
-                    .where('participants', 'array-contains', currentUser.uid)
-                    .onSnapshot(snapshot => {
-                        container.innerHTML = '';
-                        snapshot.forEach(doc => {
-                            const data = doc.data();
-                            const item = document.createElement('div');
-                            item.className = 'conversation-item';
-                            if (doc.id === currentConversationId && currentConversationType === 'group') item.classList.add('selected');
-                            item.textContent = data.name || 'Groupe sans nom';
-                            item.dataset.id = doc.id;
-                            item.dataset.type = 'group';
-                            item.addEventListener('click', () => selectConversation(doc.id, 'group', data.name));
-                            container.appendChild(item);
-                        });
-                        if (snapshot.empty) {
-                            container.innerHTML = '<div class="conversation-item">Aucun groupe. Cliquez sur + pour en créer un.</div>';
-                        }
-                    });
-            }
-        }
-
-        // Sélectionner une conversation
-        function selectConversation(conversationId, type, title) {
-            if (unsubscribeMessages) unsubscribeMessages();
-            currentConversationId = conversationId;
-            currentConversationType = type;
-            chatHeader.innerText = title;
-            messageInputArea.style.display = 'flex';
-
-            // Mettre à jour la classe selected dans la liste
-            document.querySelectorAll('.conversation-item').forEach(item => {
-                item.classList.remove('selected');
-                if (item.dataset.id === conversationId && item.dataset.type === type) item.classList.add('selected');
-            });
-
-            // Écouter les messages
-            let messagesRef;
-            if (type === 'private') {
-                messagesRef = db.collection('privateConversations').doc(conversationId).collection('messages').orderBy('timestamp');
-            } else if (type === 'group') {
-                messagesRef = db.collection('groups').doc(conversationId).collection('messages').orderBy('timestamp');
-            } else {
-                return; // ne devrait pas arriver
-            }
-
-            unsubscribeMessages = messagesRef.onSnapshot(snapshot => {
-                messagesContainer.innerHTML = '';
-                snapshot.forEach(doc => {
-                    const msg = doc.data();
-                    const messageDiv = document.createElement('div');
-                    messageDiv.className = `message ${msg.senderId === currentUser.uid ? 'user' : 'other'}`;
-                    // Pour les groupes, on peut ajouter le nom de l'expéditeur
-                    let text = msg.text;
-                    if (type === 'group' && msg.senderId !== currentUser.uid) {
-                        // Récupérer le nom de l'expéditeur (on pourrait le faire en async, mais simplifions)
-                        // Pour l'instant, on affiche juste le message
-                    }
-                    messageDiv.textContent = text;
-                    messagesContainer.appendChild(messageDiv);
-                });
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                // Jouer un bip si le message n'est pas de l'utilisateur actuel
-                snapshot.docChanges().forEach(change => {
-                    if (change.type === 'added') {
-                        const msg = change.doc.data();
-                        if (msg.senderId !== currentUser.uid) {
-                            playBeep();
-                        }
+                        container.appendChild(item);
                     }
                 });
-            });
-
-            // Gérer l'envoi de message
-            sendBtn.onclick = () => {
-                const text = messageText.value.trim();
-                if (!text) return;
-                const message = {
-                    text: text,
-                    senderId: currentUser.uid,
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                };
-                if (type === 'private') {
-                    db.collection('privateConversations').doc(conversationId).collection('messages').add(message);
-                } else if (type === 'group') {
-                    db.collection('groups').doc(conversationId).collection('messages').add(message);
-                }
-                messageText.value = '';
-            };
         }
 
-        // Démarrer le chat avec l'IA
-        function startAIChat() {
-            chatHeader.innerText = 'Discussion avec CHARLES';
-            messageInputArea.style.display = 'flex';
-            if (unsubscribeMessages) unsubscribeMessages();
-
-            const aiChatRef = db.collection('aiChats').doc(currentUser.uid).collection('messages').orderBy('timestamp');
-            unsubscribeMessages = aiChatRef.onSnapshot(snapshot => {
-                messagesContainer.innerHTML = '';
-                snapshot.forEach(doc => {
-                    const msg = doc.data();
-                    const messageDiv = document.createElement('div');
-                    messageDiv.className = `message ${msg.sender === 'user' ? 'user' : 'other'}`;
-                    messageDiv.textContent = msg.text;
-                    messagesContainer.appendChild(messageDiv);
-                });
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                snapshot.docChanges().forEach(change => {
-                    if (change.type === 'added') {
-                        const msg = change.doc.data();
-                        if (msg.sender === 'ai') {
-                            playBeep();
-                        }
-                    }
-                });
-            });
-
-            sendBtn.onclick = () => {
-                const text = messageText.value.trim();
-                if (!text) return;
-                db.collection('aiChats').doc(currentUser.uid).collection('messages').add({
-                    text: text,
-                    sender: 'user',
-                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                }).then(() => {
-                    const response = generateAIResponse(text);
-                    db.collection('aiChats').doc(currentUser.uid).collection('messages').add({
-                        text: response,
-                        sender: 'ai',
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                    });
-                });
-                messageText.value = '';
-            };
-        }
-
-        // Fonction de réponse de l'IA améliorée
-        function generateAIResponse(input) {
-            input = input.trim().toLowerCase();
-            // Calculs simples
-            const mathPattern = /^(\d+)\s*([\+\-\*\/])\s*(\d+)$/;
-            const match = input.match(mathPattern);
-            if (match) {
-                const a = parseFloat(match[1]);
-                const op = match[2];
-                const b = parseFloat(match[3]);
-                let result;
-                switch(op) {
-                    case '+': result = a + b; break;
-                    case '-': result = a - b; break;
-                    case '*': result = a * b; break;
-                    case '/': result = a / b; break;
-                }
-                return `Le résultat est : ${result}`;
-            }
-
-            // Questions sur l'identité
-            if (input.includes('comment tu t\'appelles') || input.includes('ton nom') || input.includes('qui es-tu')) {
-                return "Je m'appelle CHARLES, une IA développée par CHARTECH. Je suis là pour vous aider !";
-            }
-            if (input.includes('qui t\'a créé') || input.includes('ton créateur')) {
-                return "J'ai été créé par CHARTECH, une équipe de développeurs passionnés.";
-            }
-            // Salutations
-            if (input.includes('bonjour') || input.includes('salut') || input.includes('hello')) {
-                return "Bonjour ! Comment puis-je vous aider ?";
-            }
-            if (input.includes('comment ça va') || input.includes('comment tu vas')) {
-                return "Je vais très bien, merci ! Et vous ?";
-            }
-            if (input.includes('merci')) {
-                return "Avec plaisir ! N'hésitez pas si vous avez d'autres questions.";
-            }
-            if (input.includes('au revoir') || input.includes('bye')) {
-                return "Au revoir ! Passez une excellente journée.";
-            }
-            // Réponse par défaut
-            return "Je suis CHARLES, votre assistant intelligent. Je peux répondre à des questions simples et faire des calculs. Posez-moi une question !";
-        }
-
-        // Gestion de la langue
-        languageSelect.addEventListener('change', (e) => {
-            applyLanguage(e.target.value);
+        // Modals +
+        document.getElementById('add-conversation-btn').addEventListener('click', () => {
+            if (currentTab === 'private') document.getElementById('new-private-modal').classList.remove('hidden');
+            else if (currentTab === 'group') document.getElementById('new-group-modal').classList.remove('hidden');
         });
 
-        // Initialisation : appliquer la langue par défaut
-        applyLanguage('fr');
+        document.getElementById('cancel-private').addEventListener('click', () => document.getElementById('new-private-modal').classList.add('hidden'));
+        document.getElementById('cancel-group').addEventListener('click', () => document.getElementById('new-group-modal').classList.add('hidden'));
+
+        document.getElementById('create-private').addEventListener('click', async () => {
+            const contact = document.getElementById('private-contact').value.trim();
+            if (!contact) return;
+            
+            const userQuery = contact.includes('@') ? db.collection('users').where('email', '==', contact) : db.collection('users').where('phoneNumber', '==', contact);
+            const snapshot = await userQuery.get();
+            
+            if (snapshot.empty) return alert("Utilisateur non trouvé");
+            const otherUserId = snapshot.docs[0].id;
+            if (otherUserId === currentUser.uid) return alert("C'est vous !");
+
+            const existingConv = await db.collection('privateConversations').where('participants', 'array-contains', currentUser.uid).get();
+            let convId = null;
+            existingConv.forEach(d => { if (d.data().participants.includes(otherUserId) && d.data().participants.length === 2) convId = d.id; });
+
+            if (!convId) {
+                const newConv = await db.collection('privateConversations').add({ participants: [currentUser.uid, otherUserId], createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+                convId = newConv.id;
+            }
+            
+            document.getElementById('new-private-modal').classList.add('hidden');
+            document.getElementById('private-contact').value = '';
+        });
+
+        // --- 8. GESTION DES MESSAGES ---
+        function selectConversation(id, type, title) {
+            if (unsubscribeMessages) unsubscribeMessages();
+            currentConversationId = id;
+            chatHeaderTitle.innerText = title;
+            messageInputArea.style.display = 'flex';
+            openMobileChat(); // Affiche le chat sur mobile
+
+            const coll = type === 'private' ? 'privateConversations' : 'groups';
+            
+            unsubscribeMessages = db.collection(coll).doc(id).collection('messages').orderBy('timestamp')
+                .onSnapshot(snapshot => {
+                    messagesContainer.innerHTML = '';
+                    snapshot.forEach(doc => {
+                        const msg = doc.data();
+                        const div = document.createElement('div');
+                        div.className = `message ${msg.senderId === currentUser.uid ? 'user' : 'other'}`;
+                        div.textContent = msg.text;
+                        messagesContainer.appendChild(div);
+                    });
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                });
+
+            document.getElementById('send-message').onclick = () => sendMessage(coll, id);
+            messageText.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(coll, id); };
+        }
+
+        function sendMessage(collection, id) {
+            const text = messageText.value.trim();
+            if (!text) return;
+            db.collection(collection).doc(id).collection('messages').add({
+                text: text,
+                senderId: currentUser.uid,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            messageText.value = '';
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // --- 9. IA CHARLES ---
+        function startAIChat() {
+            chatHeaderTitle.innerText = 'Discussion avec CHARLES';
+            messageInputArea.style.display = 'flex';
+            if (unsubscribeMessages) unsubscribeMessages();
+
+            unsubscribeMessages = db.collection('aiChats').doc(currentUser.uid).collection('messages').orderBy('timestamp')
+                .onSnapshot(snapshot => {
+                    messagesContainer.innerHTML = '';
+                    snapshot.forEach(doc => {
+                        const msg = doc.data();
+                        const div = document.createElement('div');
+                        div.className = `message ${msg.sender === 'user' ? 'user' : 'other'}`;
+                        div.textContent = msg.text;
+                        messagesContainer.appendChild(div);
+                    });
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                });
+
+            document.getElementById('send-message').onclick = sendAIMessage;
+            messageText.onkeypress = (e) => { if (e.key === 'Enter') sendAIMessage(); };
+        }
+
+        function sendAIMessage() {
+            const text = messageText.value.trim();
+            if (!text) return;
+            const ref = db.collection('aiChats').doc(currentUser.uid).collection('messages');
+            
+            ref.add({ text, sender: 'user', timestamp: firebase.firestore.FieldValue.serverTimestamp() }).then(() => {
+                const response = generateAIResponse(text);
+                setTimeout(() => {
+                    ref.add({ text: response, sender: 'ai', timestamp: firebase.firestore.FieldValue.serverTimestamp() });
+                }, 500); // Petit délai pour simuler la réflexion
+            });
+            messageText.value = '';
+        }
+
+        function generateAIResponse(input) {
+            input = input.trim().toLowerCase();
+            if (/^(\d+)\s*([\+\-\*\/])\s*(\d+)$/.test(input)) {
+                return "Le résultat est calculé ! (Fonctionnalité mathématique basique)";
+            }
+            if (input.includes('nom') || input.includes('qui')) return "Je suis CHARLES, l'IA de CHARTECH !";
+            return "Message reçu. Je suis en phase de test pour le moment !";
+        }
     </script>
 </body>
 </html>
+
